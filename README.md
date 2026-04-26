@@ -17,14 +17,19 @@ Requires Node ≥ 18 and Claude Code (`npm install -g @anthropic-ai/claude-code`
 ## Usage
 
 ```bash
-cc-use init                # interactive setup: pick template, paste API key
-cc-use deepseek            # launch Claude Code via DeepSeek
-cc-use kimi -p "review X"  # one-shot query
+cc-use init                       # interactive setup: pick template, paste API key
+cc-use deepseek                   # launch Claude Code via DeepSeek (auto-init if not configured)
+cc-use deepseek -p "review X"     # one-shot query (extra args pass through to claude)
+cc-use                            # launch with the default profile
 
-cc-use ls                  # list profiles
-cc-use doctor              # validate default profile
-cc-use --help              # all commands
+cc-use ls                         # list configured profiles
+cc-use default [profile]          # show or set the default profile
+cc-use doctor [profile]           # validate profile (--all checks all)
+cc-use import-history [profile]   # copy current project's ~/.claude/ history into profile
+cc-use --help                     # full command reference
 ```
+
+`[profile]` is optional — omit to use the default profile.
 
 Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). Each profile uses an isolated `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`, so `~/.claude/` is never read or modified.
 

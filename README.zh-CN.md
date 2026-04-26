@@ -17,14 +17,19 @@ npm install -g cc-use
 ## 使用
 
 ```bash
-cc-use init                # 交互式：选模板、输入 API Key
-cc-use deepseek            # 用 DeepSeek 启动 Claude Code
-cc-use kimi -p "审查 X"    # 用 Kimi 跑一次性查询
+cc-use init                       # 交互式：选模板、输入 API Key
+cc-use deepseek                   # 用 DeepSeek 启动 Claude Code（profile 不存在会自动 init）
+cc-use deepseek -p "审查 X"       # 一次性查询（profile 后的参数全部透传给 claude）
+cc-use                            # 用默认 profile 启动
 
-cc-use ls                  # 列已配置的 profile
-cc-use doctor              # 校验默认 profile
-cc-use --help              # 所有命令
+cc-use ls                         # 列已配置的 profile
+cc-use default [profile]          # 显示 / 设置默认 profile
+cc-use doctor [profile]           # 校验 profile（--all 校验所有）
+cc-use import-history [profile]   # 把当前项目的 ~/.claude/ 历史拷进 profile
+cc-use --help                     # 完整命令参考
 ```
+
+`[profile]` 可省略，不传则使用默认 profile。
 
 profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。每个 profile 用独立的 `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`，原生 `~/.claude/` 永远不读不写。
 
