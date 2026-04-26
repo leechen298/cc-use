@@ -1,0 +1,8 @@
+{
+  "description": "Moonshot Kimi K2 — official Anthropic-compatible endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://api.moonshot.ai/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<MOONSHOT_API_KEY>",
+    "ANTHROPIC_MODEL": "kimi-k2"
+  }
+}

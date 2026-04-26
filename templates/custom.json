@@ -1,0 +1,8 @@
+{
+  "description": "Custom — fill in any Anthropic-compatible endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "<https://your-provider.example.com/anthropic>",
+    "ANTHROPIC_AUTH_TOKEN": "<YOUR_API_KEY>",
+    "ANTHROPIC_MODEL": "<your-model-name>"
+  }
+}

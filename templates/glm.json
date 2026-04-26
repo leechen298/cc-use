@@ -1,0 +1,9 @@
+{
+  "description": "Zhipu GLM (4.6+) — official Anthropic-compatible endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<ZHIPU_API_KEY>",
+    "ANTHROPIC_MODEL": "glm-4.6",
+    "ANTHROPIC_SMALL_FAST_MODEL": "glm-4.6"
+  }
+}

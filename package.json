@@ -1,0 +1,59 @@
+{
+  "name": "cc-use",
+  "version": "0.1.0",
+  "description": "Launch Claude Code with third-party Anthropic-compatible providers (DeepSeek, Kimi, GLM, Qwen, Volcengine, OpenRouter…) without touching your official ~/.claude/ config.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "claude-code-cli",
+    "anthropic",
+    "anthropic-api",
+    "anthropic-compatible",
+    "deepseek",
+    "kimi",
+    "glm",
+    "qwen",
+    "volcengine",
+    "openrouter",
+    "cli",
+    "launcher",
+    "developer-tools"
+  ],
+  "author": "leechen298",
+  "license": "MIT",
+  "homepage": "https://github.com/leechen298/cc-use#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leechen298/cc-use.git"
+  },
+  "bugs": {
+    "url": "https://github.com/leechen298/cc-use/issues"
+  },
+  "type": "module",
+  "bin": {
+    "cc-use": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "test": "tsx --test test/profile.test.ts",
+    "prepublishOnly": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "description": "Volcengine ARK — Doubao Code via Anthropic-compatible /api/coding endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://ark.cn-beijing.volces.com/api/coding",
+    "ANTHROPIC_AUTH_TOKEN": "<ARK_API_KEY>",
+    "ANTHROPIC_MODEL": "doubao-seed-2.0-code"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "description": "OpenRouter — Anthropic-compatible aggregator; pick any model via ANTHROPIC_MODEL",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "<OPENROUTER_API_KEY>",
+    "ANTHROPIC_MODEL": "anthropic/claude-sonnet-4.7"
+  }
+}

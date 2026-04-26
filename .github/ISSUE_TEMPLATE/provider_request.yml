@@ -1,0 +1,74 @@
+name: New provider template request
+description: Propose a new built-in provider template for cc-use (e.g. a Chinese cloud, a regional reseller, a self-hosted gateway).
+title: "[provider] Add template for <name>"
+labels: ["provider-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new provider template! Please answer the items below so it's easy to evaluate and merge.
+        See `docs/governance.md` for the full acceptance criteria.
+
+  - type: input
+    id: provider_name
+    attributes:
+      label: Provider name
+      description: e.g. "AnyScale", "Inflection AI", "internal-corp-gateway"
+      placeholder: "<provider name>"
+    validations:
+      required: true
+
+  - type: input
+    id: official_docs
+    attributes:
+      label: Official documentation link
+      description: Link to vendor docs proving they expose a **native Anthropic Messages API** (`/v1/messages`). Blog posts, screenshots, and unofficial mirrors don't count.
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: protocol
+    attributes:
+      label: Endpoint protocol
+      description: cc-use only supports providers that speak the native Anthropic Messages API. OpenAI-compatible providers need a translating proxy like claude-code-router and are out of scope.
+      options:
+        - Native Anthropic Messages API
+        - OpenAI-compatible only (out of scope — please don't open this issue)
+        - Unsure
+    validations:
+      required: true
+
+  - type: input
+    id: base_url
+    attributes:
+      label: Endpoint base URL
+      description: Must be HTTPS. cc-use will append `/v1/messages` at runtime.
+      placeholder: "https://api.example.com/anthropic"
+    validations:
+      required: true
+
+  - type: input
+    id: model_name
+    attributes:
+      label: Default model id
+      description: The model id you would set as `ANTHROPIC_MODEL` in the template's defaults.
+      placeholder: "example-pro-v1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor_output
+    attributes:
+      label: 'cc-use doctor output (with your real key, masked)'
+      description: |
+        After running `cc-use init <name>` and `cc-use doctor <name>`, paste the output here. cc-use already masks the token in its output (`sk-1...cdef`), so the paste is safe — but please double-check before pasting.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Caveats / notes (optional)
+      description: Anything maintainers should know — quirks, regional requirements, model rotation, etc.
