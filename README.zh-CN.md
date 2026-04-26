@@ -4,6 +4,8 @@
 
 用第三方 Anthropic 兼容的 provider 启动 Claude Code，不动你的 `~/.claude/`。
 
+![cc-use 演示](docs/assets/demo.gif)
+
 ## 安装
 
 ```bash

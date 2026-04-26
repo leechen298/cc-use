@@ -4,6 +4,8 @@
 
 Launch Claude Code with a third-party Anthropic-compatible provider, without touching your `~/.claude/`.
 
+![cc-use demo](docs/assets/demo.gif)
+
 ## Install
 
 ```bash
