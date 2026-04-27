@@ -1,0 +1,12 @@
+{
+  "description": "MiniMax (M2.7) — official Anthropic-compatible endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://api.minimaxi.com/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<MINIMAX_API_KEY>",
+    "ANTHROPIC_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.7",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "MiniMax-M2.7"
+  }
+}

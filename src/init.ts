@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { PROVIDERS_DIR, profilePath } from './paths.js';
 import { isReserved, profileExists, validateProfileName } from './profile.js';
 import { listTemplates, loadTemplate, type TemplateMeta } from './templates.js';
-import { ask, askHidden, askYesNo } from './wizard.js';
+import { ask, askHidden, askYesNo, pickOption } from './wizard.js';
 import { getDefaultProfile, setDefaultProfile } from './config.js';
 import { runDoctor } from './doctor.js';
 
@@ -109,22 +109,14 @@ async function pickTemplate(opts: InitOptions): Promise<TemplateMeta> {
   if (opts.nonInteractive) {
     throw new Error(`--template is required in non-interactive mode. Available: ${all.join(', ')}`);
   }
-  process.stdout.write('\nAvailable templates:\n');
-  for (let i = 0; i < all.length; i++) {
-    const meta = loadTemplate(all[i]!);
-    process.stdout.write(`  ${i + 1}. ${meta.name.padEnd(12)} ${meta.description}\n`);
-  }
-  while (true) {
-    const answer = await ask(`\nPick a template (1-${all.length} or name):`);
-    const asNum = Number.parseInt(answer, 10);
-    if (Number.isInteger(asNum) && asNum >= 1 && asNum <= all.length) {
-      return loadTemplate(all[asNum - 1]!);
-    }
-    if (all.includes(answer)) {
-      return loadTemplate(answer);
-    }
-    process.stderr.write(`cc-use: invalid choice '${answer}'. Try again.\n`);
-  }
+  const ordered = [...all.filter((n) => n !== 'custom'), ...all.filter((n) => n === 'custom')];
+  const metas = ordered.map((n) => loadTemplate(n));
+  const idx = await pickOption(
+    '\nPick a provider template:',
+    metas.map((m) => ({ label: m.name, hint: m.description })),
+    Math.max(0, metas.findIndex((m) => m.name === 'deepseek')),
+  );
+  return metas[idx]!;
 }
 
 async function pickName(tpl: TemplateMeta, opts: InitOptions): Promise<string> {

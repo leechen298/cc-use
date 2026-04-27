@@ -35,15 +35,20 @@ profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。每个 p
 
 ## 内置 provider
 
-| 模板          | 提供商                  | 端点                                          |
-|---------------|-------------------------|-----------------------------------------------|
-| `deepseek`    | DeepSeek V4             | `api.deepseek.com/anthropic`                  |
-| `volcengine`  | 火山方舟（豆包代码模型） | `ark.cn-beijing.volces.com/api/coding`        |
-| `kimi`        | Moonshot Kimi K2        | `api.moonshot.ai/anthropic`                   |
-| `glm`         | 智谱 GLM 4.6+           | `open.bigmodel.cn/api/anthropic`              |
-| `qwen`        | 阿里百炼（DashScope）   | `dashscope.aliyuncs.com/apps/anthropic`       |
-| `openrouter`  | OpenRouter              | `openrouter.ai/api`                           |
-| `custom`      | 自定义（你来填）        | （手动）                                      |
+| 模板          | 提供商                          | 端点                                          |
+|---------------|----------------------------------|-----------------------------------------------|
+| `deepseek`    | DeepSeek V4（直连）              | `api.deepseek.com/anthropic`                  |
+| `kimi`        | Moonshot Kimi K2.6（直连）       | `api.moonshot.ai/anthropic`                   |
+| `kimi-plan`   | Moonshot Kimi Coding Plan        | `api.kimi.com/coding/`                        |
+| `glm`         | 智谱 GLM 5.1                     | `open.bigmodel.cn/api/anthropic`              |
+| `qwen`        | 阿里百炼 DashScope（直连）       | `dashscope.aliyuncs.com/apps/anthropic`       |
+| `qwen-plan`   | 阿里百炼 Token Plan              | `token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic` |
+| `minimax`     | MiniMax M2.7                     | `api.minimaxi.com/anthropic`                  |
+| `volcengine`  | 火山方舟 Coding Plan             | `ark.cn-beijing.volces.com/api/coding`        |
+| `openrouter`  | OpenRouter                       | `openrouter.ai/api`                           |
+| `custom`      | 自定义（你来填）                 | （手动）                                      |
+
+带 `-plan` 的是订阅入口（Coding Plan / Token Plan），通常是厂商专门给 Claude Code 适配的那条路，按月固定费、不按 token 计。
 
 模板里都不带 API Key，运行 `cc-use init` 时再输入。
 

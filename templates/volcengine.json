@@ -1,8 +1,12 @@
 {
-  "description": "Volcengine ARK — Doubao Code via Anthropic-compatible /api/coding endpoint",
+  "description": "Volcengine ARK Coding Plan — multi-model gateway (Doubao default; supports glm/kimi/minimax/deepseek via /api/coding)",
   "defaults": {
     "ANTHROPIC_BASE_URL": "https://ark.cn-beijing.volces.com/api/coding",
     "ANTHROPIC_AUTH_TOKEN": "<ARK_API_KEY>",
-    "ANTHROPIC_MODEL": "doubao-seed-2.0-code"
+    "ANTHROPIC_MODEL": "doubao-seed-2.0-code",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "doubao-seed-2.0-code",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "doubao-seed-2.0-code",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "doubao-seed-2.0-code",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "doubao-seed-2.0-code"
   }
 }

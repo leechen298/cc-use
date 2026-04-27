@@ -1,0 +1,12 @@
+{
+  "description": "Aliyun Bailian Token Plan — subscription gateway (qwen3.6-plus default; supports glm/kimi/MiniMax)",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<DASHSCOPE_TOKEN_PLAN_KEY>",
+    "ANTHROPIC_MODEL": "qwen3.6-plus",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen3.6-plus",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen3.6-plus",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen3.6-plus",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "qwen3.6-plus"
+  }
+}

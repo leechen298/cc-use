@@ -1,0 +1,12 @@
+{
+  "description": "Moonshot Kimi Coding Plan — subscription endpoint (Kimi K2 Thinking; switchable via Tab in Claude Code)",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://api.kimi.com/coding/",
+    "ANTHROPIC_AUTH_TOKEN": "<KIMI_PLAN_API_KEY>",
+    "ANTHROPIC_MODEL": "kimi-k2-thinking",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-k2-thinking",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-k2-thinking",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-k2-thinking",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-k2-thinking"
+  }
+}

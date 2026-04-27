@@ -1,9 +1,12 @@
 {
-  "description": "Zhipu GLM (4.6+) — official Anthropic-compatible endpoint",
+  "description": "Zhipu GLM (5.1) — official Anthropic-compatible endpoint",
   "defaults": {
     "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
     "ANTHROPIC_AUTH_TOKEN": "<ZHIPU_API_KEY>",
-    "ANTHROPIC_MODEL": "glm-4.6",
-    "ANTHROPIC_SMALL_FAST_MODEL": "glm-4.6"
+    "ANTHROPIC_MODEL": "glm-5.1",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.1",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.1",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-5.1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "glm-5.1"
   }
 }

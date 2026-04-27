@@ -35,15 +35,20 @@ Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). Each prof
 
 ## Built-in providers
 
-| Template      | Provider                    | Endpoint                                      |
-|---------------|-----------------------------|-----------------------------------------------|
-| `deepseek`    | DeepSeek V4                 | `api.deepseek.com/anthropic`                  |
-| `volcengine`  | Volcengine ARK (Doubao)     | `ark.cn-beijing.volces.com/api/coding`        |
-| `kimi`        | Moonshot Kimi K2            | `api.moonshot.ai/anthropic`                   |
-| `glm`         | Zhipu GLM 4.6+              | `open.bigmodel.cn/api/anthropic`              |
-| `qwen`        | Alibaba DashScope (Bailian) | `dashscope.aliyuncs.com/apps/anthropic`       |
-| `openrouter`  | OpenRouter                  | `openrouter.ai/api`                           |
-| `custom`      | Bring your own              | (you fill in)                                 |
+| Template      | Provider                          | Endpoint                                      |
+|---------------|-----------------------------------|-----------------------------------------------|
+| `deepseek`    | DeepSeek V4 (direct)              | `api.deepseek.com/anthropic`                  |
+| `kimi`        | Moonshot Kimi K2.6 (direct)       | `api.moonshot.ai/anthropic`                   |
+| `kimi-plan`   | Moonshot Kimi Coding Plan         | `api.kimi.com/coding/`                        |
+| `glm`         | Zhipu GLM 5.1                     | `open.bigmodel.cn/api/anthropic`              |
+| `qwen`        | Aliyun DashScope Qwen (direct)    | `dashscope.aliyuncs.com/apps/anthropic`       |
+| `qwen-plan`   | Aliyun Bailian Token Plan         | `token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic` |
+| `minimax`     | MiniMax M2.7                      | `api.minimaxi.com/anthropic`                  |
+| `volcengine`  | Volcengine ARK Coding Plan        | `ark.cn-beijing.volces.com/api/coding`        |
+| `openrouter`  | OpenRouter                        | `openrouter.ai/api`                           |
+| `custom`      | Bring your own                    | (you fill in)                                 |
+
+The `-plan` variants point at the provider's subscription endpoint (Coding Plan / Token Plan) — usually the Anthropic-compatible path the provider explicitly documents for Claude Code, with subscription-flat billing instead of per-token.
 
 Templates ship without API keys — set yours via `cc-use init`.
 

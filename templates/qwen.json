@@ -1,8 +1,12 @@
 {
-  "description": "Alibaba DashScope (Qwen) — Bailian Anthropic-compatible endpoint (Beijing region)",
+  "description": "Aliyun DashScope (Qwen) — direct pay-per-token API",
   "defaults": {
     "ANTHROPIC_BASE_URL": "https://dashscope.aliyuncs.com/apps/anthropic",
     "ANTHROPIC_AUTH_TOKEN": "<DASHSCOPE_API_KEY>",
-    "ANTHROPIC_MODEL": "qwen3-coder-plus"
+    "ANTHROPIC_MODEL": "qwen3-coder-plus",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen3-coder-plus",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen3-coder-plus",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen3-coder-plus",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "qwen3-coder-plus"
   }
 }
