@@ -48,7 +48,7 @@ Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). Each prof
 | `minimax`     | MiniMax M2.7 (CN)                 | `api.minimaxi.com/anthropic`                  |
 | `minimax-intl`| MiniMax M2.7 (international)      | `api.minimax.io/anthropic`                    |
 | `volcengine-plan` | Volcengine ARK Coding Plan (CN) | `ark.cn-beijing.volces.com/api/coding`     |
-| `volcengine-intl-plan` | BytePlus ModelArk Coding Plan (intl) | `ark.ap-southeast.bytepluses.com/api/coding` |
+| `byteplus-plan` | BytePlus ModelArk Coding Plan (international, same product as Volcengine ARK under ByteDance's overseas brand) | `ark.ap-southeast.bytepluses.com/api/coding` |
 | `openrouter`  | OpenRouter                        | `openrouter.ai/api`                           |
 | `custom`      | Bring your own                    | (you fill in)                                 |
 

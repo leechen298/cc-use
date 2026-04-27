@@ -48,7 +48,7 @@ profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。每个 p
 | `minimax`     | MiniMax M2.7（CN）               | `api.minimaxi.com/anthropic`                  |
 | `minimax-intl`| MiniMax M2.7（国际）             | `api.minimax.io/anthropic`                    |
 | `volcengine-plan` | 火山方舟 Coding Plan（CN）   | `ark.cn-beijing.volces.com/api/coding`        |
-| `volcengine-intl-plan` | BytePlus ModelArk Coding Plan（国际） | `ark.ap-southeast.bytepluses.com/api/coding` |
+| `byteplus-plan` | BytePlus ModelArk Coding Plan（字节给海外起的另一个品牌，跟 Volcengine 是同一套技术） | `ark.ap-southeast.bytepluses.com/api/coding` |
 | `openrouter`  | OpenRouter                       | `openrouter.ai/api`                           |
 | `custom`      | 自定义（你来填）                 | （手动）                                      |
 

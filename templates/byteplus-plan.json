@@ -1,5 +1,5 @@
 {
-  "description": "BytePlus ModelArk Coding Plan — international Volcengine ARK (Doubao default; Asia-Pacific Southeast)",
+  "description": "BytePlus ModelArk Coding Plan — ByteDance's international AI brand (same product as Volcengine ARK in CN; Doubao default; Asia-Pacific Southeast region)",
   "defaults": {
     "ANTHROPIC_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/coding",
     "ANTHROPIC_AUTH_TOKEN": "<BYTEPLUS_ARK_API_KEY>",

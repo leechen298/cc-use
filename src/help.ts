@@ -13,7 +13,7 @@ Usage:
   cc-use --help    | -h               Show this help
 
 Built-in templates:
-  deepseek, volcengine-plan, volcengine-intl-plan, kimi, kimi-plan, glm, glm-intl, qwen, qwen-plan, qwen-intl, minimax, minimax-intl, openrouter, custom
+  deepseek, volcengine-plan, byteplus-plan, kimi, kimi-plan, glm, glm-intl, qwen, qwen-plan, qwen-intl, minimax, minimax-intl, openrouter, custom
 
 Files (under ~/.cc-use/):
   providers/<name>.json   Your provider configurations
