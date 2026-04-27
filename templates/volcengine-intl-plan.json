@@ -1,0 +1,12 @@
+{
+  "description": "BytePlus ModelArk Coding Plan — international Volcengine ARK (Doubao default; Asia-Pacific Southeast)",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/coding",
+    "ANTHROPIC_AUTH_TOKEN": "<BYTEPLUS_ARK_API_KEY>",
+    "ANTHROPIC_MODEL": "doubao-seed-2.0-code",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "doubao-seed-2.0-code",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "doubao-seed-2.0-code",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "doubao-seed-2.0-code",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "doubao-seed-2.0-code"
+  }
+}

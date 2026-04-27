@@ -1,0 +1,12 @@
+{
+  "description": "Aliyun Model Studio (Qwen) — international DashScope endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://dashscope-intl.aliyuncs.com/apps/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<DASHSCOPE_INTL_API_KEY>",
+    "ANTHROPIC_MODEL": "qwen3.6-plus",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen3.6-plus",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "qwen3.6-plus",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "qwen3.6-plus",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "qwen3.6-plus"
+  }
+}

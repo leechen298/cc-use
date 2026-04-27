@@ -1,0 +1,12 @@
+{
+  "description": "Zhipu GLM (5.1) — international Z.ai Anthropic-compatible endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<ZAI_API_KEY>",
+    "ANTHROPIC_MODEL": "glm-5.1",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.1",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.1",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-5.1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "glm-5.1"
+  }
+}

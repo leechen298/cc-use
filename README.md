@@ -38,13 +38,17 @@ Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). Each prof
 | Template      | Provider                          | Endpoint                                      |
 |---------------|-----------------------------------|-----------------------------------------------|
 | `deepseek`    | DeepSeek V4 (direct)              | `api.deepseek.com/anthropic`                  |
-| `kimi`        | Moonshot Kimi K2.6 (direct)       | `api.moonshot.ai/anthropic`                   |
+| `kimi`        | Moonshot Kimi K2.6 (direct, CN)   | `api.moonshot.cn/anthropic`                   |
 | `kimi-plan`   | Moonshot Kimi Coding Plan         | `api.kimi.com/coding/`                        |
-| `glm`         | Zhipu GLM 5.1                     | `open.bigmodel.cn/api/anthropic`              |
-| `qwen`        | Aliyun DashScope Qwen (direct)    | `dashscope.aliyuncs.com/apps/anthropic`       |
-| `qwen-plan`   | Aliyun Bailian Token Plan         | `token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic` |
-| `minimax`     | MiniMax M2.7                      | `api.minimaxi.com/anthropic`                  |
-| `volcengine`  | Volcengine ARK Coding Plan        | `ark.cn-beijing.volces.com/api/coding`        |
+| `glm`         | Zhipu GLM 5.1 (CN)                | `open.bigmodel.cn/api/anthropic`              |
+| `glm-intl`    | Zhipu GLM 5.1 (international)     | `api.z.ai/api/anthropic`                      |
+| `qwen`        | Aliyun DashScope Qwen (direct, CN)| `dashscope.aliyuncs.com/apps/anthropic`       |
+| `qwen-plan`   | Aliyun Bailian Token Plan (CN)    | `token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic` |
+| `qwen-intl`   | Aliyun Model Studio (international)| `dashscope-intl.aliyuncs.com/apps/anthropic`  |
+| `minimax`     | MiniMax M2.7 (CN)                 | `api.minimaxi.com/anthropic`                  |
+| `minimax-intl`| MiniMax M2.7 (international)      | `api.minimax.io/anthropic`                    |
+| `volcengine-plan` | Volcengine ARK Coding Plan (CN) | `ark.cn-beijing.volces.com/api/coding`     |
+| `volcengine-intl-plan` | BytePlus ModelArk Coding Plan (intl) | `ark.ap-southeast.bytepluses.com/api/coding` |
 | `openrouter`  | OpenRouter                        | `openrouter.ai/api`                           |
 | `custom`      | Bring your own                    | (you fill in)                                 |
 

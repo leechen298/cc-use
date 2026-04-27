@@ -38,13 +38,17 @@ profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。每个 p
 | 模板          | 提供商                          | 端点                                          |
 |---------------|----------------------------------|-----------------------------------------------|
 | `deepseek`    | DeepSeek V4（直连）              | `api.deepseek.com/anthropic`                  |
-| `kimi`        | Moonshot Kimi K2.6（直连）       | `api.moonshot.ai/anthropic`                   |
+| `kimi`        | Moonshot Kimi K2.6（直连，CN）   | `api.moonshot.cn/anthropic`                   |
 | `kimi-plan`   | Moonshot Kimi Coding Plan        | `api.kimi.com/coding/`                        |
-| `glm`         | 智谱 GLM 5.1                     | `open.bigmodel.cn/api/anthropic`              |
-| `qwen`        | 阿里百炼 DashScope（直连）       | `dashscope.aliyuncs.com/apps/anthropic`       |
-| `qwen-plan`   | 阿里百炼 Token Plan              | `token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic` |
-| `minimax`     | MiniMax M2.7                     | `api.minimaxi.com/anthropic`                  |
-| `volcengine`  | 火山方舟 Coding Plan             | `ark.cn-beijing.volces.com/api/coding`        |
+| `glm`         | 智谱 GLM 5.1（CN）               | `open.bigmodel.cn/api/anthropic`              |
+| `glm-intl`    | 智谱 GLM 5.1（国际，z.ai）       | `api.z.ai/api/anthropic`                      |
+| `qwen`        | 阿里百炼 DashScope（直连，CN）   | `dashscope.aliyuncs.com/apps/anthropic`       |
+| `qwen-plan`   | 阿里百炼 Token Plan（CN）        | `token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic` |
+| `qwen-intl`   | 阿里 Model Studio（国际）        | `dashscope-intl.aliyuncs.com/apps/anthropic`  |
+| `minimax`     | MiniMax M2.7（CN）               | `api.minimaxi.com/anthropic`                  |
+| `minimax-intl`| MiniMax M2.7（国际）             | `api.minimax.io/anthropic`                    |
+| `volcengine-plan` | 火山方舟 Coding Plan（CN）   | `ark.cn-beijing.volces.com/api/coding`        |
+| `volcengine-intl-plan` | BytePlus ModelArk Coding Plan（国际） | `ark.ap-southeast.bytepluses.com/api/coding` |
 | `openrouter`  | OpenRouter                       | `openrouter.ai/api`                           |
 | `custom`      | 自定义（你来填）                 | （手动）                                      |
 

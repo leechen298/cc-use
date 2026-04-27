@@ -17,3 +17,4 @@ yarn.lock
 .claude/sessions/
 .claude/cache/
 .claude/.credentials.json
+docs/_notes/
