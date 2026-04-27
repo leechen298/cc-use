@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/cc-use.svg)](https://www.npmjs.com/package/cc-use)
 
-用第三方 Anthropic 兼容的 provider 启动 Claude Code，不动你的 `~/.claude/`。
+用 DeepSeek、Kimi、Qwen、GLM、MiniMax、火山方舟、BytePlus ModelArk、OpenRouter 等第三方 Anthropic 兼容服务启动 Claude Code —— 国内厂商和它们的国际站都覆盖 —— 不动你的 `~/.claude/`。
 
 ![cc-use 演示](docs/assets/demo.gif)
 

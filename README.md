@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/cc-use.svg)](https://www.npmjs.com/package/cc-use)
 
-Launch Claude Code with a third-party Anthropic-compatible provider, without touching your `~/.claude/`.
+Launch Claude Code with DeepSeek, Kimi, Qwen, GLM, MiniMax, Volcengine ARK, BytePlus ModelArk, OpenRouter — Chinese providers and their international endpoints both included — without modifying your `~/.claude/`.
 
 ![cc-use demo](docs/assets/demo.gif)
 
