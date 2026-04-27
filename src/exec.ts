@@ -3,17 +3,25 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { sessionDirFor } from './paths.js';
 import type { Profile } from './profile.js';
 
+export function buildChildEnv(
+  profile: Profile,
+  sessionDir: string,
+  base: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  return {
+    ...base,
+    ...profile.env,
+    CLAUDE_CONFIG_DIR: sessionDir,
+  };
+}
+
 export async function spawnClaude(profile: Profile, claudeArgs: string[]): Promise<number> {
   const sessionDir = sessionDirFor(profile.name);
   if (!existsSync(sessionDir)) {
     mkdirSync(sessionDir, { recursive: true });
   }
 
-  const childEnv: NodeJS.ProcessEnv = {
-    ...process.env,
-    ...profile.env,
-    CLAUDE_CONFIG_DIR: sessionDir,
-  };
+  const childEnv = buildChildEnv(profile, sessionDir);
 
   const isWin = process.platform === 'win32';
 

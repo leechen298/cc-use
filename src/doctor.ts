@@ -43,9 +43,8 @@ export async function runDoctor(opts: DoctorOptions): Promise<number> {
     return 1;
   }
 
-  const baseUrl = profile.env.ANTHROPIC_BASE_URL!.replace(/\/+$/, '');
   const model = profile.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5';
-  const url = `${baseUrl}/v1/messages`;
+  const url = buildMessagesUrl(profile.env.ANTHROPIC_BASE_URL!);
   process.stdout.write(`\nProbing ${url} (model: ${model})...\n`);
 
   let resp: Response;
@@ -112,6 +111,13 @@ export async function runDoctor(opts: DoctorOptions): Promise<number> {
     process.stderr.write(`           body: ${bodyText.replace(/\s+/g, ' ').trim()}\n`);
   }
   return 1;
+}
+
+export function buildMessagesUrl(baseUrl: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, '');
+  if (/\/v1\/messages$/.test(trimmed)) return trimmed;
+  if (/\/v1$/.test(trimmed)) return `${trimmed}/messages`;
+  return `${trimmed}/v1/messages`;
 }
 
 function isMessageShape(v: unknown): boolean {

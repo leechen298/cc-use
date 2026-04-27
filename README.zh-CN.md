@@ -12,7 +12,7 @@
 npm install -g cc-use
 ```
 
-要求 Node ≥ 18，且已装 Claude Code（`npm install -g @anthropic-ai/claude-code`）。
+要求 Node ≥ 18，且已装 Claude Code（`npm install -g @anthropic-ai/claude-code`）。在 macOS / Linux 上充分测试；Windows 只在 CI 跑了 build + test，交互流程没有人工跑过，best-effort 支持。
 
 ## 使用
 

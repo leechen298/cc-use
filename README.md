@@ -12,7 +12,7 @@ Launch Claude Code with a third-party Anthropic-compatible provider, without tou
 npm install -g cc-use
 ```
 
-Requires Node ≥ 18 and Claude Code (`npm install -g @anthropic-ai/claude-code`).
+Requires Node ≥ 18 and Claude Code (`npm install -g @anthropic-ai/claude-code`). Tested on macOS and Linux; Windows is best-effort (CI builds + tests on Windows, but interactive flows aren't manually verified there yet).
 
 ## Usage
 
