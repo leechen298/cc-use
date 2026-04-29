@@ -249,8 +249,10 @@ function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-// Claude Code encodes cwd as project folder by replacing path separators with dashes
-// e.g. /Users/foo/work → -Users-foo-work
+// Claude Code encodes cwd as a project folder by replacing path separators with dashes.
+// Windows drive separators also need normalization because ':' is not a valid
+// filename character in a path segment.
+// e.g. /Users/foo/work -> -Users-foo-work, C:\Users\foo\work -> C--Users-foo-work
 function encodeCwdToProjectFolder(cwd: string): string {
-  return cwd.replace(/[\\/]/g, '-');
+  return cwd.replace(/[\\/:]/g, '-');
 }

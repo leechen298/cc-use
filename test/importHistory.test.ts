@@ -194,6 +194,10 @@ test('CLI import-history --sanitize enables provider-compatible cleanup', () => 
   assert.match(result.stdout, /sanitized 1 transcript file/);
 });
 
+test('encodeCwdToProjectFolder normalizes Windows drive separators', () => {
+  assert.equal(encodeCwdToProjectFolder('C:\\Users\\runner\\repo'), 'C--Users-runner-repo');
+});
+
 test('sanitizeTranscriptRows removes thinking-only assistant nodes and repairs parent links', () => {
   const rows = [
     {
@@ -358,7 +362,7 @@ test('sanitizeTranscriptRows leaves already-safe transcripts unchanged', () => {
 });
 
 function encodeCwdToProjectFolder(cwd: string): string {
-  return cwd.replace(/[\\/]/g, '-');
+  return cwd.replace(/[\\/:]/g, '-');
 }
 
 function createCliFixture(name: string): { home: string; ccUseDir: string; cwd: string; projectFolder: string } {
