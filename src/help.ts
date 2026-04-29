@@ -8,7 +8,7 @@ Usage:
   cc-use ls                           List configured profiles
   cc-use doctor [profile]             Validate fields + probe endpoint (--all checks every profile, --no-probe skips network)
   cc-use default [profile]            Show or set the default profile
-  cc-use import-history [profile]     Copy native Claude history into a profile
+  cc-use import-history [profile]     Copy native Claude history into a profile (--sanitize enables provider-compatible cleanup)
   cc-use --version | -v               Print version
   cc-use --help    | -h               Show this help
 

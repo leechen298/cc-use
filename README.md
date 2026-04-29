@@ -31,6 +31,8 @@ cc-use --help                     # full command reference
 
 `[profile]` is optional — omit to use the default profile.
 
+`import-history` copies the original transcript by default. For DeepSeek or other providers that cannot resume Claude thinking/tool-call history, add `--sanitize`; this keeps readable transcript text, removes Claude thinking blocks, and converts historical tool/media/result blocks into plain text markers before copying into `~/.cc-use/sessions/<profile>/`.
+
 Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). Each profile uses an isolated `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`, so `~/.claude/` is never read or modified.
 
 ## Built-in providers

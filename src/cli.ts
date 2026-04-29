@@ -297,11 +297,14 @@ function parseDoctorArgs(args: string[]): { profile?: string; all: boolean; prob
   return { profile, all, probe };
 }
 
-function parseImportArgs(args: string[]): { profile: string; all: boolean } {
+function parseImportArgs(args: string[]): { profile: string; all: boolean; sanitize: boolean } {
   let profile: string | undefined;
   let all = false;
+  let sanitize = false;
   for (const a of args) {
     if (a === '--all') all = true;
+    else if (a === '--sanitize') sanitize = true;
+    else if (a === '--raw') sanitize = false;
     else if (a.startsWith('-')) {
       process.stderr.write(`cc-use import-history: unknown flag '${a}'\n`);
       process.exit(1);
@@ -318,5 +321,5 @@ function parseImportArgs(args: string[]): { profile: string; all: boolean } {
       process.exit(1);
     }
   }
-  return { profile, all };
+  return { profile, all, sanitize };
 }

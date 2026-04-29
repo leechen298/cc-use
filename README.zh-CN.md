@@ -31,6 +31,8 @@ cc-use --help                     # 完整命令参考
 
 `[profile]` 可省略，不传则使用默认 profile。
 
+`import-history` 默认原样拷贝历史。DeepSeek 或其他 provider 无法恢复 Claude thinking / 工具调用历史时，追加 `--sanitize`；它会保留可读文本，删除 Claude thinking 块，并把历史工具调用 / 媒体 / 工具结果块转成普通文本标记后再写入 `~/.cc-use/sessions/<profile>/`。
+
 profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。每个 profile 用独立的 `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`，原生 `~/.claude/` 永远不读不写。
 
 ## 内置 provider
