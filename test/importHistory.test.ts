@@ -23,8 +23,7 @@ writeFileSync(
 const importHistoryMod = await import('../src/importHistory.js');
 const pathsMod = await import('../src/paths.js');
 const { runImportHistory, sanitizeTranscriptRows } = importHistoryMod;
-const cliPath = join(process.cwd(), 'src/cli.ts');
-const tsxLoaderPath = join(process.cwd(), 'node_modules/tsx/dist/loader.mjs');
+const cliPath = join(process.cwd(), 'dist/cli.js');
 
 test.after(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -161,7 +160,7 @@ test('CLI import-history defaults to raw transcript import', () => {
   const fixture = createCliFixture('cli-raw');
   const result = spawnSync(
     process.execPath,
-    ['--import', tsxLoaderPath, cliPath, 'import-history', 'deepseek'],
+    [cliPath, 'import-history', 'deepseek'],
     {
       cwd: fixture.cwd,
       env: { ...process.env, CC_USE_DIR: fixture.ccUseDir, HOME: fixture.home },
@@ -179,7 +178,7 @@ test('CLI import-history --sanitize enables provider-compatible cleanup', () => 
   const fixture = createCliFixture('cli-sanitize');
   const result = spawnSync(
     process.execPath,
-    ['--import', tsxLoaderPath, cliPath, 'import-history', 'deepseek', '--sanitize'],
+    [cliPath, 'import-history', 'deepseek', '--sanitize'],
     {
       cwd: fixture.cwd,
       env: { ...process.env, CC_USE_DIR: fixture.ccUseDir, HOME: fixture.home },
