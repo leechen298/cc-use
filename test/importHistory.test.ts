@@ -163,7 +163,7 @@ test('CLI import-history defaults to raw transcript import', () => {
     [cliPath, 'import-history', 'deepseek'],
     {
       cwd: fixture.cwd,
-      env: { ...process.env, CC_USE_DIR: fixture.ccUseDir, HOME: fixture.home },
+      env: { ...process.env, CC_USE_DIR: fixture.ccUseDir, HOME: fixture.home, USERPROFILE: fixture.home },
       encoding: 'utf8',
     },
   );
@@ -181,7 +181,7 @@ test('CLI import-history --sanitize enables provider-compatible cleanup', () => 
     [cliPath, 'import-history', 'deepseek', '--sanitize'],
     {
       cwd: fixture.cwd,
-      env: { ...process.env, CC_USE_DIR: fixture.ccUseDir, HOME: fixture.home },
+      env: { ...process.env, CC_USE_DIR: fixture.ccUseDir, HOME: fixture.home, USERPROFILE: fixture.home },
       encoding: 'utf8',
     },
   );
