@@ -9,6 +9,7 @@ import {
   loadProfile,
   profileExists,
   validateProfileName,
+  type Profile,
 } from './profile.js';
 import { getDefaultProfile, setDefaultProfile } from './config.js';
 import { runInit } from './init.js';
@@ -16,6 +17,7 @@ import { runDoctor, runDoctorAll } from './doctor.js';
 import { runImportHistory } from './importHistory.js';
 import { listTemplates } from './templates.js';
 import { USAGE } from './help.js';
+import { sessionDirFor, NATIVE_CLAUDE_DIR } from './paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -73,13 +75,15 @@ async function main(): Promise<void> {
       return;
     case 'import-history':
       process.exit(await runImportHistory(parseImportArgs(rest)));
+    case 'with':
+      process.exit(await launchWithProfile(rest));
     default:
       // Unknown head: treat as profile name
       process.exit(await launchByName(head, rest));
   }
 }
 
-async function launchByName(name: string, passThroughArgs: string[]): Promise<number> {
+async function resolveLaunchProfile(name: string): Promise<Profile | number> {
   if (profileExists(name)) {
     const profile = loadProfile(name);
     const missing = findPlaceholders(profile.env);
@@ -97,9 +101,9 @@ async function launchByName(name: string, passThroughArgs: string[]): Promise<nu
       );
       const initCode = await runInit({ template: name, name, force: true });
       if (initCode !== 0) return initCode;
-      return spawnClaude(loadProfile(name), passThroughArgs);
+      return loadProfile(name);
     }
-    return spawnClaude(profile, passThroughArgs);
+    return profile;
   }
 
   if (listTemplates().includes(name)) {
@@ -112,7 +116,7 @@ async function launchByName(name: string, passThroughArgs: string[]): Promise<nu
     process.stdout.write(`\ncc-use: profile '${name}' not configured yet. Setting it up...\n\n`);
     const initCode = await runInit({ template: name, name });
     if (initCode !== 0) return initCode;
-    return spawnClaude(loadProfile(name), passThroughArgs);
+    return loadProfile(name);
   }
 
   process.stderr.write(
@@ -120,6 +124,24 @@ async function launchByName(name: string, passThroughArgs: string[]): Promise<nu
       `        Run 'cc-use ls' to see profiles, 'cc-use init' to set one up, or 'cc-use --help'.\n`,
   );
   return 1;
+}
+
+async function launchByName(name: string, passThroughArgs: string[]): Promise<number> {
+  const resolved = await resolveLaunchProfile(name);
+  if (typeof resolved === 'number') return resolved;
+  return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: sessionDirFor(resolved.name) });
+}
+
+async function launchWithProfile(args: string[]): Promise<number> {
+  const name = args[0];
+  if (!name) {
+    process.stderr.write(`cc-use with: profile name required.\n`);
+    return 1;
+  }
+  const passThroughArgs = args.slice(1);
+  const resolved = await resolveLaunchProfile(name);
+  if (typeof resolved === 'number') return resolved;
+  return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: NATIVE_CLAUDE_DIR });
 }
 
 async function launchWithDefault(passThroughArgs: string[]): Promise<void> {
@@ -159,9 +181,9 @@ async function launchWithDefault(passThroughArgs: string[]): Promise<void> {
     );
     const initCode = await runInit({ template: def, name: def, force: true });
     if (initCode !== 0) process.exit(initCode);
-    process.exit(await spawnClaude(loadProfile(def), passThroughArgs));
+    process.exit(await spawnClaude(loadProfile(def), passThroughArgs, { claudeConfigDir: sessionDirFor(def) }));
   }
-  const code = await spawnClaude(profile, passThroughArgs);
+  const code = await spawnClaude(profile, passThroughArgs, { claudeConfigDir: sessionDirFor(profile.name) });
   process.exit(code);
 }
 

@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/cc-use.svg)](https://www.npmjs.com/package/cc-use)
 
-Launch Claude Code with DeepSeek, Kimi, Qwen, GLM, MiniMax, Volcengine ARK, BytePlus ModelArk, OpenRouter — Chinese providers and their international endpoints both included — without modifying your `~/.claude/`.
+Launch Claude Code with DeepSeek, Kimi, Qwen, GLM, MiniMax, Volcengine ARK, BytePlus ModelArk, OpenRouter — Chinese providers and their international endpoints both included. Isolated by default; `cc-use with` shares your native `~/.claude/` context.
 
 ![cc-use demo](docs/assets/demo.gif)
 
@@ -18,8 +18,9 @@ Requires Node ≥ 18 and Claude Code (`npm install -g @anthropic-ai/claude-code`
 
 ```bash
 cc-use init                       # interactive setup: pick template, paste API key
-cc-use deepseek                   # launch Claude Code via DeepSeek (auto-init if not configured)
+cc-use deepseek                   # launch Claude Code via DeepSeek (isolated session)
 cc-use deepseek -p "review X"     # one-shot query (extra args pass through to claude)
+cc-use with deepseek              # launch via DeepSeek but reuse native ~/.claude (shared context)
 cc-use                            # launch with the default profile
 
 cc-use ls                         # list configured profiles
@@ -33,7 +34,7 @@ cc-use --help                     # full command reference
 
 `import-history` copies the original transcript by default. For DeepSeek or other providers that cannot resume Claude thinking/tool-call history, add `--sanitize`; this keeps readable transcript text, removes Claude thinking blocks, and converts historical tool/media/result blocks into plain text markers before copying into `~/.cc-use/sessions/<profile>/`.
 
-Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). Each profile uses an isolated `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`, so `~/.claude/` is never read or modified.
+Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). By default, each profile uses an isolated `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`. Use `cc-use with <profile>` to share your native `~/.claude/` context (history, skills, projects) instead.
 
 ## Built-in providers
 
@@ -60,7 +61,7 @@ The `-plan` variants point at the provider's subscription endpoint (Coding Plan 
 
 ### MiMo: CN vs international
 
-- **`mimo`** — uses the public pay-as-you-go Anthropic endpoint (`api.xiaomimimo.com/anthropic`). Suitable for both CN and international users; billing differs by account region, not by template.
+- **`mimo`** — uses the public pay-as-you-go Anthropic endpoint (`api.xiaomimimo.com/anthropic`). The public docs currently expose this single endpoint; billing differs by account region, not by template.
 - **`mimo-plan`** — uses the CN Token Plan endpoint (`token-plan-cn.xiaomimimo.com/anthropic`). For international Token Plan users (Singapore / Europe), the endpoint is not a public constant — check your subscription console for the exact Anthropic URL, then `cc-use init mimo-plan` and manually edit the generated profile's `ANTHROPIC_BASE_URL`.
 
 Templates ship without API keys — set yours via `cc-use init`.

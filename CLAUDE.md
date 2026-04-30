@@ -25,13 +25,13 @@ The published binary is `dist/cli.js` (`bin.cc-use` in package.json). After `pnp
 
 ## Architecture
 
-cc-use is a **launcher**, not a switcher or proxy. Each invocation injects env vars into one `claude` child process and exits. The hard invariant: **never write to `~/.claude/`** — that's the native Claude Code subscription's territory.
+cc-use is a **launcher**, not a switcher or proxy. Each invocation injects env vars into one `claude` child process and exits. The default `cc-use <profile>` uses isolated sessions under `~/.cc-use/sessions/` and does not touch `~/.claude/`. The opt-in `cc-use with <profile>` subcommand shares native `~/.claude/` as `CLAUDE_CONFIG_DIR` (history, skills, projects).
 
 ### Request flow (one launch)
 
-`src/cli.ts` parses argv → resolves a profile name → `src/profile.ts` loads/validates `~/.cc-use/providers/<name>.json` → `src/exec.ts` spawns `claude` with the profile's env merged into `process.env` plus `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`. SIGINT/SIGTERM/SIGHUP are forwarded; exit code is the child's (or `128 + signal-code` on signal exit).
+`src/cli.ts` parses argv → resolves a profile name → `src/profile.ts` loads/validates `~/.cc-use/providers/<name>.json` → `src/exec.ts` spawns `claude` with the profile's env merged into `process.env` plus `CLAUDE_CONFIG_DIR` (isolated `~/.cc-use/sessions/<name>/` by default, or native `~/.claude/` for `cc-use with`). SIGINT/SIGTERM/SIGHUP are forwarded; exit code is the child's (or `128 + signal-code` on signal exit).
 
-The first positional arg drives dispatch: `init`/`ls`/`doctor`/`default`/`import-history` are subcommands; anything else is a profile name. A leading `-` or `--` means "use default profile, pass everything to claude". `findPlaceholders` (in `profile.ts`) intercepts unfinished profiles at launch time and triggers `runInit({ force: true })`.
+The first positional arg drives dispatch: `init`/`ls`/`doctor`/`default`/`import-history`/`with` are subcommands; anything else is a profile name. A leading `-` or `--` means "use default profile, pass everything to claude". `findPlaceholders` (in `profile.ts`) intercepts unfinished profiles at launch time and triggers `runInit({ force: true })`.
 
 ### Storage layout (single source of truth: `src/paths.ts`)
 
@@ -52,7 +52,7 @@ Adding a template requires native Anthropic Messages API support and a passing `
 
 ### Cross-cutting constraints
 
-- **Reserved names** (`profile.ts:RESERVED_NAMES`): `init`, `ls`, `list`, `doctor`, `default`, `help`, `version`, `import-history`. Profile *and* template names must not collide. The CLI dispatcher and `validateProfileName` both depend on this set.
+- **Reserved names** (`profile.ts:RESERVED_NAMES`): `init`, `ls`, `list`, `doctor`, `default`, `help`, `version`, `import-history`, `with`. Profile *and* template names must not collide. The CLI dispatcher and `validateProfileName` both depend on this set.
 - **Required env keys** in every profile: `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`. `validateEnv` throws otherwise. `looksLikePlaceholder` recognizes `<...>`, empty, and `YOUR_API_KEY` — keep template defaults using `<PLACEHOLDER>` form so the placeholder detection works.
 - **Profile files are written with mode `0600`** (in `init.ts`). Don't relax this.
 - **Doctor probe**: `POST <base_url>/v1/messages` with `max_tokens=1`, shape-checks `{type:"message", content:[…]}`. Special-cases 401/403/404. Skip with `--no-probe`.

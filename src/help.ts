@@ -2,7 +2,8 @@ export const USAGE = `cc-use — launch Claude Code with a chosen Anthropic-comp
 
 Usage:
   cc-use                              Launch with the default profile (or wizard if none)
-  cc-use <profile> [claude args...]   Launch using <profile>; extra args pass to claude
+  cc-use <profile> [claude args...]   Launch using <profile> (isolated session); extra args pass to claude
+  cc-use with <profile> [claude args...]  Launch using <profile> but reuse native ~/.claude (shared context)
   cc-use [-flag args...]              Launch with default + pass args to claude
   cc-use init [template]              Interactive setup; defaults to picker
   cc-use ls                           List configured profiles
@@ -18,9 +19,11 @@ Built-in templates:
 Files (under ~/.cc-use/):
   providers/<name>.json   Your provider configurations
   config.json             { "default": "<profile>" }
-  sessions/<name>/        Per-profile CLAUDE_CONFIG_DIR (sessions, never touches ~/.claude/)
+  sessions/<name>/        Per-profile CLAUDE_CONFIG_DIR (isolated sessions)
 
-cc-use never writes ~/.claude/, never edits your shell rc files.
+By default, cc-use <profile> uses isolated sessions under ~/.cc-use/sessions/.
+Use cc-use with <profile> to share native ~/.claude/ context (history, skills, projects).
+cc-use never edits your shell rc files.
 Native \`claude\` (your official subscription) keeps working in parallel.
 
 More: https://github.com/leechen298/cc-use
