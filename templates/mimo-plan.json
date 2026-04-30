@@ -1,0 +1,12 @@
+{
+  "description": "Xiaomi MiMo Token Plan (CN) — subscription Anthropic-compatible endpoint",
+  "defaults": {
+    "ANTHROPIC_BASE_URL": "https://token-plan-cn.xiaomimimo.com/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "<MIMO_TOKEN_PLAN_KEY>",
+    "ANTHROPIC_MODEL": "mimo-v2.5-pro",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "mimo-v2.5-pro",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "mimo-v2.5-pro",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "mimo-v2.5-pro",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "mimo-v2.5-pro"
+  }
+}

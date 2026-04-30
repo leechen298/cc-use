@@ -51,10 +51,17 @@ Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). Each prof
 | `minimax-intl`| MiniMax M2.7 (international)      | `api.minimax.io/anthropic`                    |
 | `volcengine-plan` | Volcengine ARK Coding Plan (CN) | `ark.cn-beijing.volces.com/api/coding`     |
 | `byteplus-plan` | BytePlus ModelArk Coding Plan (international, same product as Volcengine ARK under ByteDance's overseas brand) | `ark.ap-southeast.bytepluses.com/api/coding` |
+| `mimo`        | Xiaomi MiMo V2.5 Pro (direct)     | `api.xiaomimimo.com/anthropic`                |
+| `mimo-plan`   | Xiaomi MiMo Token Plan (CN)       | `token-plan-cn.xiaomimimo.com/anthropic`      |
 | `openrouter`  | OpenRouter                        | `openrouter.ai/api`                           |
 | `custom`      | Bring your own                    | (you fill in)                                 |
 
 The `-plan` variants point at the provider's subscription endpoint (Coding Plan / Token Plan) — usually the Anthropic-compatible path the provider explicitly documents for Claude Code, with subscription-flat billing instead of per-token.
+
+### MiMo: CN vs international
+
+- **`mimo`** — uses the public pay-as-you-go Anthropic endpoint (`api.xiaomimimo.com/anthropic`). Suitable for both CN and international users; billing differs by account region, not by template.
+- **`mimo-plan`** — uses the CN Token Plan endpoint (`token-plan-cn.xiaomimimo.com/anthropic`). For international Token Plan users (Singapore / Europe), the endpoint is not a public constant — check your subscription console for the exact Anthropic URL, then `cc-use init mimo-plan` and manually edit the generated profile's `ANTHROPIC_BASE_URL`.
 
 Templates ship without API keys — set yours via `cc-use init`.
 
