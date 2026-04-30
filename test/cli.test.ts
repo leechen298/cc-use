@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -10,8 +10,17 @@ import { isReserved } from '../src/profile.js';
 const tmp = mkdtempSync(join(tmpdir(), 'cc-use-cli-test-'));
 const ccUseDir = join(tmp, 'cc-use');
 const cliPath = join(process.cwd(), 'dist/cli.js');
+const isWin = process.platform === 'win32';
+const posixOnly = isWin ? 'fake claude script requires POSIX shell' : undefined;
 
 test.after(() => rmSync(tmp, { recursive: true, force: true }));
+
+// Fake claude that echoes CLAUDE_CONFIG_DIR so we can assert the split.
+const binDir = join(tmp, 'bin');
+mkdirSync(binDir, { recursive: true });
+const fakeClaude = join(binDir, 'claude');
+writeFileSync(fakeClaude, '#!/bin/sh\necho "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"\n');
+chmodSync(fakeClaude, 0o755);
 
 function setupProfile(name = 'deepseek', env?: Record<string, string>): void {
   const providersDir = join(ccUseDir, 'providers');
@@ -30,7 +39,13 @@ function setupProfile(name = 'deepseek', env?: Record<string, string>): void {
 function run(args: string[], envOverrides?: Record<string, string>) {
   return spawnSync(process.execPath, [cliPath, ...args], {
     encoding: 'utf8',
-    env: { ...process.env, CC_USE_DIR: ccUseDir, ...envOverrides },
+    env: {
+      ...process.env,
+      CC_USE_DIR: ccUseDir,
+      HOME: tmp,
+      PATH: `${binDir}:${process.env.PATH}`,
+      ...envOverrides,
+    },
   });
 }
 
@@ -56,23 +71,21 @@ test('cc-use with placeholder profile in non-TTY errors', () => {
   assert.match(result.stderr, /has unfilled placeholders/);
 });
 
-test('cc-use with valid profile spawns claude (ENOENT=127 when claude not installed)', () => {
+test('cc-use with <profile> sets CLAUDE_CONFIG_DIR to native ~/.claude', { skip: posixOnly }, () => {
   setupProfile();
-  const result = run(['with', 'deepseek', '--version']);
-  // 127 = claude not found in PATH (CI), 0 = claude found and launched OK
-  if (result.status !== 0) {
-    assert.equal(result.status, 127, result.stderr);
-    assert.match(result.stderr, /claude.*not found/);
-  }
+  const result = run(['with', 'deepseek']);
+  assert.equal(result.status, 0, result.stderr);
+  // NATIVE_CLAUDE_DIR = $HOME/.claude (HOME is tmp in tests)
+  assert.match(result.stdout, /CLAUDE_CONFIG_DIR=/);
+  assert.doesNotMatch(result.stdout, /cc-use\/sessions/);
 });
 
-test('cc-use deepseek (isolated) spawns claude with session dir', () => {
+test('cc-use <profile> (isolated) sets CLAUDE_CONFIG_DIR to session dir', { skip: posixOnly }, () => {
   setupProfile();
-  const result = run(['deepseek', '--version']);
-  if (result.status !== 0) {
-    assert.equal(result.status, 127, result.stderr);
-    assert.match(result.stderr, /claude.*not found/);
-  }
+  const result = run(['deepseek']);
+  assert.equal(result.status, 0, result.stderr);
+  // sessionDirFor('deepseek') = $CC_USE_DIR/sessions/deepseek
+  assert.match(result.stdout, /CLAUDE_CONFIG_DIR=.+cc-use\/sessions\/deepseek/);
 });
 
 test('with is a reserved subcommand name', () => {
