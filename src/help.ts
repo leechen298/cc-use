@@ -1,7 +1,7 @@
 export const USAGE = `cc-use — launch Claude Code with a chosen Anthropic-compatible provider
 
 Usage:
-  cc-use                              Launch with the default profile (or wizard if none)
+  cc-use                              Launch with the default profile (isolated session; or wizard if none)
   cc-use <profile> [claude args...]   Launch using <profile> (isolated session); extra args pass to claude
   cc-use isolate <profile> [claude args...]  Launch using <profile> with explicit isolated session
   cc-use with <profile> [claude args...]  Launch using <profile> but reuse native ~/.claude (shared context)

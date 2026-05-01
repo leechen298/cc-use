@@ -22,7 +22,7 @@ cc-use with deepseek              # launch via DeepSeek, reuse native ~/.claude 
 cc-use deepseek -p "review X"     # one-shot query (extra args pass through to claude)
 cc-use isolate deepseek           # launch via DeepSeek with explicit isolated session
 cc-use deepseek                   # launch via DeepSeek (isolated session, compatible shorthand)
-cc-use                            # launch with the default profile
+cc-use                            # launch with the default profile (isolated session)
 
 cc-use ls                         # list configured profiles
 cc-use default [profile]          # show or set the default profile

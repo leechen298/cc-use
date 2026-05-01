@@ -22,7 +22,7 @@ cc-use with deepseek              # 用 DeepSeek 启动，复用原生 ~/.claude
 cc-use deepseek -p "审查 X"       # 一次性查询（profile 后的参数全部透传给 claude）
 cc-use isolate deepseek           # 用 DeepSeek 启动，显式隔离会话
 cc-use deepseek                   # 用 DeepSeek 启动（隔离会话，兼容简写）
-cc-use                            # 用默认 profile 启动
+cc-use                            # 用默认 profile 启动（隔离会话）
 
 cc-use ls                         # 列已配置的 profile
 cc-use default [profile]          # 显示 / 设置默认 profile
