@@ -53,10 +53,17 @@ profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。`cc-use 
 | `minimax-intl`| MiniMax M2.7（国际）             | `api.minimax.io/anthropic`                    |
 | `volcengine-plan` | 火山方舟 Coding Plan（CN）   | `ark.cn-beijing.volces.com/api/coding`        |
 | `byteplus-plan` | BytePlus ModelArk Coding Plan（字节给海外起的另一个品牌，跟 Volcengine 是同一套技术） | `ark.ap-southeast.bytepluses.com/api/coding` |
+| `mimo`        | 小米 MiMo V2.5 Pro（直连）        | `api.xiaomimimo.com/anthropic`                |
+| `mimo-plan`   | 小米 MiMo Token Plan（CN）        | `token-plan-cn.xiaomimimo.com/anthropic`      |
 | `openrouter`  | OpenRouter                       | `openrouter.ai/api`                           |
 | `custom`      | 自定义（你来填）                 | （手动）                                      |
 
 带 `-plan` 的是订阅入口（Coding Plan / Token Plan），通常是厂商专门给 Claude Code 适配的那条路，按月固定费、不按 token 计。
+
+### MiMo: CN vs 国际
+
+- **`mimo`** —— 走公开 pay-as-you-go Anthropic endpoint（`api.xiaomimimo.com/anthropic`）。公开文档当前只暴露这一个通用 endpoint；计费方式按账户区域区分，不按模板区分。
+- **`mimo-plan`** —— 走中国区 Token Plan endpoint（`token-plan-cn.xiaomimimo.com/anthropic`）。国际 Token Plan 用户（新加坡/欧洲）的 endpoint 不是公开常量 —— 去订阅控制台确认实际的 Anthropic URL，再 `cc-use init mimo-plan` 并手动修改生成 profile 的 `ANTHROPIC_BASE_URL`。
 
 模板里都不带 API Key，运行 `cc-use init` 时再输入。
 
