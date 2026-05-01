@@ -19,7 +19,7 @@
 cc-use 是 **Launcher（启动器）**，不是 **Switcher（切换器）**：
 
 - **Switcher**（如 farion1231/cc-switch、SaladDay/cc-switch-cli）：改写 `~/.claude/settings.json`，全局持久切换，所有终端同步生效
-- **Launcher**（cc-use）：单次启动注入 env，**不改 `~/.claude/` 任何文件**，退出即销毁，不同终端窗口可并行不同 provider
+- **Launcher**（cc-use）：单次启动注入 env，默认隔离会话；`cc-use with <p>` 显式复用原生 `~/.claude/`（共享上下文），`cc-use isolate <p>` 用独立会话目录；不同终端窗口可并行不同 provider
 
 对照类比：cc-switch 之于 nvm，cc-use 之于 npx。
 
@@ -31,14 +31,14 @@ cc-use 是 **Launcher（启动器）**，不是 **Switcher（切换器）**：
 - **G2** 命令行行为对齐现有本地 zsh 脚本（profile 路径、字段校验、退出码、stdio 透传）
 - **G3** 内置 6 个开箱即用的 provider 模板 + 1 个 custom 空白模板，社区 PR 驱动后续扩展
 - **G4** 首次安装 / 首次使用时自动弹交互向导（输入 API Key → 自动配置 → 自动探活）
-- **G5** **绝不污染原生 Claude Code**：不改 `~/.claude/`、不写 shell rc、每 profile 用独立 `CLAUDE_CONFIG_DIR`
+- **G5** **保护原生 Claude Code**：不写 shell rc；默认隔离会话（`isolate` / 裸 profile）；`with` 模式显式共享 `~/.claude/`
 - **G6** 双语文档（README.md + README.zh-CN.md）
 
 ## In Scope
 
 - **CLI 子命令**：`cc-use <profile> [claude args...]`、`cc-use [claude args...]`（用默认）、`ls`、`init [template]`、`doctor [profile]`、**`default [profile]`**（设置/查看默认 profile）、`with <profile>`、`isolate <profile>`
 - **Profile 路径解析**：`$CC_USE_DIR > ~/.cc-use/providers/<name>.json`
-- **会话隔离目录**：每个 profile 跑时设 `CLAUDE_CONFIG_DIR=$XDG_DATA_HOME/cc-use/sessions/<profile>`（mac/linux）或 `%LOCALAPPDATA%\cc-use\sessions\<profile>`（win），与原生 `~/.claude/` 完全隔离
+- **会话目录**：`cc-use isolate <p>` / `cc-use <p>` 设 `CLAUDE_CONFIG_DIR=.../sessions/<profile>` 完全隔离；`cc-use with <p>` 设 `CLAUDE_CONFIG_DIR=~/.claude/` 共享原生上下文
 - **内置模板**：deepseek、volcengine、kimi、glm、qwen、openrouter、custom（共 7）
 - **交互向导**：首次执行 `cc-use`（无参 + profile 目录空）→ 自动进 setup；`cc-use init <template>` 直接进 setup
 - **doctor 探活**：默认发一次 `POST <base_url>/v1/messages`（max_tokens=1，body "ping"）验证端点活性 + Anthropic 协议合规；`--no-probe` 关闭
@@ -85,8 +85,8 @@ cc-use 是 **Launcher（启动器）**，不是 **Switcher（切换器）**：
 | **AC14** | `cc-use init --non-interactive --token <key>` | 无 TTY 也能跑，CI 友好 |
 | **AC15** | 首次执行 `cc-use`（profile 目录为空） | 打印欢迎语 + 列出内置模板 + 自动进入交互向导 |
 | **AC16** | `cc-use doctor <profile>` | 默认联网发最小 messages 请求（消耗 ≤1 token），告知用户即将探活，反馈：✅ 200 + Anthropic shape / ⚠ 401 但 shape 对 / ❌ 端点错；`--no-probe` 跳过 |
-| **AC17** | cc-use 进程**绝不修改 `~/.claude/` 下任何文件** | 用户官方订阅登录态完整保留 |
-| **AC18** | 每个 profile 使用独立 `CLAUDE_CONFIG_DIR`（`$XDG_DATA_HOME/cc-use/sessions/<profile>` / Windows 等价路径） | 不同 profile 的会话历史不混；原生 `claude` 走 `~/.claude/` 不受影响 |
+| **AC17** | `cc-use isolate <p>` / `cc-use <p>` 不读写 `~/.claude/` | 官方订阅登录态完整保留；`cc-use with <p>` 显式共享 `~/.claude/` |
+| **AC18** | `cc-use isolate <p>` / `cc-use <p>` 使用独立 `CLAUDE_CONFIG_DIR`（`~/.cc-use/sessions/<profile>`） | 不同 profile 的会话历史不混；`cc-use with <p>` 复用 `~/.claude/` |
 | **AC19** | cc-use 永远不写用户 shell rc 文件（`.zshrc` / `.bashrc` / PowerShell profile）；不导出全局环境变量 | env 仅作用于当前 spawn 的 claude 子进程 |
 | **AC20** | Windows 上 `cc-use deepseek` | 与 mac/linux 行为等价（spawn claude.cmd 或 claude.exe，env 注入有效） |
 | **AC21** | `cc-use default <profile>` 设置默认；`cc-use default` 查看当前默认 | 写入 `<config-dir>/config.json` 的 `default` 字段；查看时打印当前值或 "no default" |

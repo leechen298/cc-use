@@ -29,6 +29,8 @@
 | B0 不隔离 | 只设 `ANTHROPIC_*`，不改 `CLAUDE_CONFIG_DIR` | ❌ Claude Code 仍写 `~/.claude/projects/<cwd-hash>/` | ⚠️ 同 cwd 不同 provider 会话历史会混 | **违反北极星，否决** |
 | B1 共享 cc-use 目录 | 所有 profile 共用 `$DATA/cc-use/sessions/` | ✅ | ⚠️ profile 之间还是混 | 半解 |
 | **B2（采纳）⭐ 每 profile 独立 dir** | 每次 spawn 设 `CLAUDE_CONFIG_DIR=$DATA/cc-use/sessions/<profile>` | ✅ | ✅ deepseek 和 kimi 两个终端并行，会话/上下文/资源各管各 | 完美对齐北极星 |
+ 
+ **当前实现**：B2 作为默认（`cc-use <p>` / `cc-use isolate <p>`），B1 的 `~/.claude/` 共享作为显式 opt-in（`cc-use with <p>`）一并支持。
 
 **采纳 B2**。具体路径：
 
@@ -38,12 +40,13 @@
 | Linux | `${XDG_DATA_HOME:-~/.local/share}/cc-use/sessions/<profile>/` |
 | Windows | `%LOCALAPPDATA%\cc-use\sessions\<profile>\` |
 
-每个 profile 第一次跑时自动创建该目录，spawn 时把 `CLAUDE_CONFIG_DIR` 指过去。Claude Code 会把会话/projects/缓存全写进去，**`~/.claude/` 一字节不动**。
+每个 profile 第一次跑时自动创建该目录，spawn 时把 `CLAUDE_CONFIG_DIR` 指过去。Claude Code 会把会话/projects/缓存全写进去，**`~/.claude/` 不动**（`cc-use with <p>` 除外，此时 `CLAUDE_CONFIG_DIR=~/.claude/` 共享原生上下文）。
 
 副作用说明（写进 README）：
 
 - 每个 profile 是独立"工作区"，无法看到原生 Claude Code 的项目历史 —— 这是 feature 不是 bug，对应北极星
 - `cc-use deepseek` 第一次跑 Claude Code 不会复用任何已有 session，需要从头开始（这正是用户要的"做代码审查"场景：要全新视角）
+- 需要复用原生 `~/.claude/` 上下文（历史、skills、projects）时，使用 `cc-use with <p>`
 
 ---
 
@@ -125,7 +128,7 @@ cc-use <unknown-name> [args...] → 报错: "no such profile"，提示 cc-use ls
 | 设计点 | 选择 |
 |---|---|
 | A 代码结构 | 多模块 `src/*.ts` |
-| B Profile 隔离 | 每 profile 独立 `CLAUDE_CONFIG_DIR` |
+| B Profile 隔离 | `isolate` / 裸 profile 用独立 `CLAUDE_CONFIG_DIR`；`with` 共享 `~/.claude/` |
 | C 交互向导 | 纯 `node:readline` |
 | D Claude 定位 | `spawn` + `shell:process.platform==='win32'` |
 | E 探活 | Messages API ping，1 token，状态码 + body shape 双重判定 |
