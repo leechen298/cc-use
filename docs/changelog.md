@@ -4,9 +4,7 @@ This file tracks user-visible product iterations at a higher level than git comm
 
 Detailed release notes live under [`docs/releases/`](./releases/README.md).
 
-## 0.3.0 (planned)
-
-Recommended next release line for the current feature set.
+## 0.3.0
 
 Release-note source: [`docs/releases/0.3.0.md`](./releases/0.3.0.md)
 
@@ -36,9 +34,7 @@ Release-note source: [`docs/releases/0.3.0.md`](./releases/0.3.0.md)
 - Added notes/article draft for MiMo + `with` workflow
 - Updated historical spec wording so it no longer contradicts shipped `with` behavior
 
-## 0.2.3 (current package version in repo)
-
-Current `package.json` still says `0.2.3`.
+## 0.2.3
 
 At this point the shipped codebase already includes multiple user-visible additions beyond a patch-level change:
 
