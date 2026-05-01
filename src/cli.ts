@@ -77,6 +77,8 @@ async function main(): Promise<void> {
       process.exit(await runImportHistory(parseImportArgs(rest)));
     case 'with':
       process.exit(await launchWithProfile(rest));
+    case 'isolate':
+      process.exit(await launchIsolated(rest));
     default:
       // Unknown head: treat as profile name
       process.exit(await launchByName(head, rest));
@@ -142,6 +144,18 @@ async function launchWithProfile(args: string[]): Promise<number> {
   const resolved = await resolveLaunchProfile(name);
   if (typeof resolved === 'number') return resolved;
   return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: NATIVE_CLAUDE_DIR });
+}
+
+async function launchIsolated(args: string[]): Promise<number> {
+  const name = args[0];
+  if (!name) {
+    process.stderr.write(`cc-use isolate: profile name required.\n`);
+    return 1;
+  }
+  const passThroughArgs = args.slice(1);
+  const resolved = await resolveLaunchProfile(name);
+  if (typeof resolved === 'number') return resolved;
+  return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: sessionDirFor(resolved.name) });
 }
 
 async function launchWithDefault(passThroughArgs: string[]): Promise<void> {

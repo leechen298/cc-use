@@ -99,8 +99,34 @@ test('with is a reserved subcommand name', () => {
   assert.equal(isReserved('with'), true);
 });
 
+test('isolate is a reserved subcommand name', () => {
+  assert.equal(isReserved('isolate'), true);
+});
+
 test('help text includes cc-use with <profile>', () => {
   assert.match(USAGE, /cc-use with <profile>/);
+});
+
+test('cc-use isolate with missing profile name errors', () => {
+  const result = run(['isolate']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use isolate: profile name required/);
+});
+
+test('cc-use isolate <profile> sets CLAUDE_CONFIG_DIR to session dir', { skip: posixOnly }, () => {
+  setupProfile();
+  const result = run(['isolate', 'deepseek']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(
+    result.stdout.includes(`CLAUDE_CONFIG_DIR=${sessionDir}\n`),
+    `expected CLAUDE_CONFIG_DIR=${sessionDir}, got: ${result.stdout}`,
+  );
+});
+
+test('--help stdout includes isolate subcommand usage', () => {
+  const result = run(['--help']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /cc-use isolate <profile>/);
 });
 
 test('--help stdout includes with subcommand usage', () => {

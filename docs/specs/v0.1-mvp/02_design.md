@@ -109,14 +109,14 @@ Body:
 cc-use                          → 有默认: spawn(default); 无默认: 进 wizard
 cc-use --version / -v           → 打印版本
 cc-use --help / -h              → 打印帮助
-cc-use <reserved-subcommand> …  → 子命令: init/ls/doctor/default/import-history
-cc-use <profile-name> [args...] → spawn(profile) + 透传 args 给 claude
+cc-use <reserved-subcommand> …  → 子命令: init/ls/doctor/default/import-history/with/isolate
+cc-use <profile-name> [args...] → spawn(profile, isolated) + 透传 args 给 claude (等价于 isolate)
 cc-use -<...> [args...]         → 首参以 `-` 开头视为 claude args，用默认 profile 透传
 cc-use -- [args...]             → 强制用默认 profile + 透传（极少用，规避歧义）
 cc-use <unknown-name> [args...] → 报错: "no such profile"，提示 cc-use ls
 ```
 
-保留子命令名（不可作为 profile 名）：`init / ls / doctor / default / help / version / import-history`。
+保留子命令名（不可作为 profile 名）：`init / ls / doctor / default / help / version / import-history / with / isolate`。
 
 默认 profile 存储：`<config-dir>/config.json` 的 `{"default": "<profile-name>"}` 字段。读优先于环境变量 `CC_USE_DEFAULT`（高级用户可在脚本中临时覆盖）。
 

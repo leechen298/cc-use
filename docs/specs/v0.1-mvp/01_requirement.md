@@ -36,7 +36,7 @@ cc-use 是 **Launcher（启动器）**，不是 **Switcher（切换器）**：
 
 ## In Scope
 
-- **CLI 子命令**：`cc-use <profile> [claude args...]`、`cc-use [claude args...]`（用默认）、`ls`、`init [template]`、`doctor [profile]`、**`default [profile]`**（设置/查看默认 profile）
+- **CLI 子命令**：`cc-use <profile> [claude args...]`、`cc-use [claude args...]`（用默认）、`ls`、`init [template]`、`doctor [profile]`、**`default [profile]`**（设置/查看默认 profile）、`with <profile>`、`isolate <profile>`
 - **Profile 路径解析**：`$CC_USE_DIR > ~/.cc-use/providers/<name>.json`
 - **会话隔离目录**：每个 profile 跑时设 `CLAUDE_CONFIG_DIR=$XDG_DATA_HOME/cc-use/sessions/<profile>`（mac/linux）或 `%LOCALAPPDATA%\cc-use\sessions\<profile>`（win），与原生 `~/.claude/` 完全隔离
 - **内置模板**：deepseek、volcengine、kimi、glm、qwen、openrouter、custom（共 7）
@@ -94,7 +94,7 @@ cc-use 是 **Launcher（启动器）**，不是 **Switcher（切换器）**：
 | **AC23** | 已设默认后执行 `cc-use [claude args...]`（首参以 `-` 开头） | 用默认 profile + 全部 argv 透传给 claude（如 `cc-use -p "hi"` 走默认 + 透传 `-p "hi"`） |
 | **AC24** | 未设默认且 `cc-use` 无参数运行 | 进入交互向导（同 AC15） |
 | **AC25** | `cc-use init <template>` 完成后，若用户当前**没有**默认 profile | 自动询问"是否设为默认？"（Y/n） |
-| **AC26** | profile 名禁止与保留子命令冲突（init/ls/doctor/default/help/version/import-history） | init / 重命名时校验，违例报错 |
+| **AC26** | profile 名禁止与保留子命令冲突（init/ls/doctor/default/help/version/import-history/with/isolate） | init / 重命名时校验，违例报错 |
 | **AC27** | 配置/会话根目录统一为 `~/.cc-use/`（Win: `%USERPROFILE%\.cc-use\`） | 结构: `providers/<name>.json` + `sessions/<name>/`（CLAUDE_CONFIG_DIR 目标）+ `config.json`（默认 profile） |
 | **AC28** | `cc-use import-history [profile] [--all]` | 单向只读拷贝 `~/.claude/projects/<cwd>/` 到当前 profile 的 sessions 目录；不修改原 `~/.claude/`；`--all` 拷所有项目 |
 

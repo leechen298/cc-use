@@ -29,6 +29,7 @@ test('reserved subcommand names are blocked', () => {
   assert.equal(profileMod.isReserved('init'), true);
   assert.equal(profileMod.isReserved('default'), true);
   assert.equal(profileMod.isReserved('with'), true);
+  assert.equal(profileMod.isReserved('isolate'), true);
   assert.equal(profileMod.isReserved('deepseek'), false);
 });
 

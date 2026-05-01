@@ -3,6 +3,7 @@ export const USAGE = `cc-use — launch Claude Code with a chosen Anthropic-comp
 Usage:
   cc-use                              Launch with the default profile (or wizard if none)
   cc-use <profile> [claude args...]   Launch using <profile> (isolated session); extra args pass to claude
+  cc-use isolate <profile> [claude args...]  Launch using <profile> with explicit isolated session
   cc-use with <profile> [claude args...]  Launch using <profile> but reuse native ~/.claude (shared context)
   cc-use [-flag args...]              Launch with default + pass args to claude
   cc-use init [template]              Interactive setup; defaults to picker
