@@ -25,7 +25,7 @@
 ## Naming
 
 - Lowercase letters, digits, dash. No leading dash.
-- No collisions with reserved subcommand names (`init`, `ls`, `doctor`, `default`, `help`, `version`, `import-history`).
+- No collisions with reserved subcommand names (`init`, `ls`, `doctor`, `default`, `help`, `version`, `import-history`, `remove`).
 
 ## Maintenance
 

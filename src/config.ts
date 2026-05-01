@@ -29,6 +29,10 @@ export function getDefaultProfile(): string | undefined {
   return readConfig().default;
 }
 
+export function getConfiguredDefaultProfile(): string | undefined {
+  return readConfig().default;
+}
+
 export function setDefaultProfile(name: string | undefined): void {
   const cfg = readConfig();
   if (name === undefined) delete cfg.default;

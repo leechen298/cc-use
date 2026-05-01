@@ -17,6 +17,7 @@ export const RESERVED_NAMES = new Set([
   'import-history',
   'with',
   'isolate',
+  'remove',
 ]);
 
 const NAME_RE = /^[A-Za-z_][A-Za-z0-9_-]*$/;

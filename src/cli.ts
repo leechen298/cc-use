@@ -15,6 +15,7 @@ import { getDefaultProfile, setDefaultProfile } from './config.js';
 import { runInit } from './init.js';
 import { runDoctor, runDoctorAll } from './doctor.js';
 import { runImportHistory } from './importHistory.js';
+import { runRemove } from './remove.js';
 import { listTemplates } from './templates.js';
 import { USAGE } from './help.js';
 import { sessionDirFor, NATIVE_CLAUDE_DIR } from './paths.js';
@@ -75,6 +76,8 @@ async function main(): Promise<void> {
       return;
     case 'import-history':
       process.exit(await runImportHistory(parseImportArgs(rest)));
+    case 'remove':
+      process.exit(await runRemove(parseRemoveArgs(rest)));
     case 'with':
       process.exit(await launchWithProfile(rest));
     case 'isolate':
@@ -161,23 +164,36 @@ async function launchIsolated(args: string[]): Promise<number> {
 async function launchWithDefault(passThroughArgs: string[]): Promise<void> {
   const def = getDefaultProfile();
   if (!def) {
-    if (!process.stdin.isTTY) {
-      process.stderr.write(
-        `cc-use: no default profile set and stdin is not a TTY. Run 'cc-use init' first.\n`,
-      );
-      process.exit(1);
-    }
-    process.stdout.write(
-      `\nWelcome to cc-use! No profile configured yet.\n` +
-        `Let's set one up — you'll need an API key for your chosen provider.\n\n`,
-    );
-    process.exit(await runInit({}));
+    await chooseDefaultOrInit(passThroughArgs);
+    return;
   }
   if (!profileExists(def)) {
-    process.stderr.write(
-      `cc-use: default profile '${def}' not found. Run 'cc-use default <name>' or 'cc-use init'.\n`,
-    );
-    process.exit(1);
+    const fromEnv = !!process.env.CC_USE_DEFAULT;
+    if (!process.stdin.isTTY) {
+      if (fromEnv) {
+        process.stderr.write(
+          `cc-use: CC_USE_DEFAULT points to '${def}' but that profile does not exist. ` +
+            `Unset CC_USE_DEFAULT or create the profile.\n`,
+        );
+      } else {
+        process.stderr.write(
+          `cc-use: default profile '${def}' not found. Run 'cc-use default <name>' or 'cc-use init'.\n`,
+        );
+      }
+      process.exit(1);
+    }
+    // TTY: handle broken default
+    if (fromEnv) {
+      process.stderr.write(
+        `cc-use: warning: CC_USE_DEFAULT points to '${def}' but that profile does not exist. ` +
+          `Unset or update the environment variable.\n`,
+      );
+    } else {
+      setDefaultProfile(undefined);
+      process.stdout.write(`cc-use: configured default '${def}' no longer exists; unset.\n`);
+    }
+    await chooseDefaultOrInit(passThroughArgs);
+    return;
   }
   const profile = loadProfile(def);
   const missing = findPlaceholders(profile.env);
@@ -198,6 +214,41 @@ async function launchWithDefault(passThroughArgs: string[]): Promise<void> {
     process.exit(await spawnClaude(loadProfile(def), passThroughArgs, { claudeConfigDir: sessionDirFor(def) }));
   }
   const code = await spawnClaude(profile, passThroughArgs, { claudeConfigDir: sessionDirFor(profile.name) });
+  process.exit(code);
+}
+
+async function chooseDefaultOrInit(passThroughArgs: string[]): Promise<void> {
+  const profiles = listProfiles();
+  if (!process.stdin.isTTY) {
+    process.stderr.write(
+      `cc-use: no default profile set. Run 'cc-use default <profile>' or 'cc-use init'.\n`,
+    );
+    process.exit(1);
+  }
+  if (profiles.length === 0) {
+    process.stdout.write(
+      `\nWelcome to cc-use! No profile configured yet.\n` +
+        `Let's set one up — you'll need an API key for your chosen provider.\n\n`,
+    );
+    process.exit(await runInit({}));
+  }
+  // TTY picker
+  const { pickOption } = await import('./wizard.js');
+  const items = [
+    ...profiles.map((p) => ({ label: p.name })),
+    { label: 'Create a new profile' },
+  ];
+  const idx = await pickOption('Choose a profile to launch:', items);
+  if (idx === profiles.length) {
+    // "Create a new profile"
+    process.exit(await runInit({}));
+  }
+  const chosen = profiles[idx]!.name;
+  setDefaultProfile(chosen);
+  process.stdout.write(`cc-use: default profile set to '${chosen}'.\n`);
+  const code = await spawnClaude(loadProfile(chosen), passThroughArgs, {
+    claudeConfigDir: sessionDirFor(chosen),
+  });
   process.exit(code);
 }
 
@@ -331,6 +382,29 @@ function parseDoctorArgs(args: string[]): { profile?: string; all: boolean; prob
     }
   }
   return { profile, all, probe };
+}
+
+function parseRemoveArgs(args: string[]): { profile: string; yes: boolean; deleteSession: boolean } {
+  let profile: string | undefined;
+  let yes = false;
+  let deleteSession = false;
+  for (const a of args) {
+    if (a === '--yes' || a === '-y') yes = true;
+    else if (a === '--delete-session') deleteSession = true;
+    else if (a.startsWith('-')) {
+      process.stderr.write(`cc-use remove: unknown flag '${a}'\n`);
+      process.exit(1);
+    } else if (!profile) profile = a;
+    else {
+      process.stderr.write(`cc-use remove: unexpected argument '${a}'\n`);
+      process.exit(1);
+    }
+  }
+  if (!profile) {
+    process.stderr.write(`cc-use remove: profile name required.\n`);
+    process.exit(1);
+  }
+  return { profile, yes, deleteSession };
 }
 
 function parseImportArgs(args: string[]): { profile: string; all: boolean; sanitize: boolean } {

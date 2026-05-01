@@ -8,6 +8,7 @@ Usage:
   cc-use [-flag args...]              Launch with default + pass args to claude
   cc-use init [template]              Interactive setup; defaults to picker
   cc-use ls                           List configured profiles
+  cc-use remove <profile>             Remove a profile config (--delete-session removes isolated history)
   cc-use doctor [profile]             Validate fields + probe endpoint (--all checks every profile, --no-probe skips network)
   cc-use default [profile]            Show or set the default profile
   cc-use import-history [profile]     Copy native Claude history into a profile (--sanitize enables provider-compatible cleanup)

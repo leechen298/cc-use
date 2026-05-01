@@ -25,6 +25,7 @@ cc-use deepseek                   # launch via DeepSeek (isolated session, compa
 cc-use                            # launch with the default profile (isolated session)
 
 cc-use ls                         # list configured profiles
+cc-use remove deepseek            # remove profile config (--delete-session removes isolated history)
 cc-use default [profile]          # show or set the default profile
 cc-use doctor [profile]           # validate profile (--all checks all)
 cc-use import-history [profile]   # copy current project's ~/.claude/ history into profile
