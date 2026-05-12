@@ -5,6 +5,37 @@ Use this file as the source of truth for current CLI semantics. Historical desig
 
 ## Command modes
 
+### `cc-use auto [claude args...]`
+
+Automatic isolated launch.
+
+- Selects the first usable configured profile before launching Claude Code
+- Uses the configured default profile first, then deduped `auto.fallbackOrder`
+- Reuses fresh successful usability cache entries within TTL
+- Rechecks stale, missing, unknown, or unusable entries before skipping
+- Uses `~/.cc-use/sessions/<selected-profile>/` as `CLAUDE_CONFIG_DIR`
+
+Typical use:
+
+```bash
+cc-use auto
+cc-use auto -p "review this diff"
+```
+
+### `cc-use with auto [claude args...]`
+
+Automatic shared-context launch.
+
+- Uses the same auto profile selection path as `cc-use auto`
+- Reuses native `~/.claude/` as `CLAUDE_CONFIG_DIR`
+- Keeps `with` mode explicit; auto routing does not change default launch semantics
+
+Typical use:
+
+```bash
+cc-use with auto
+```
+
 ### `cc-use with <profile> [claude args...]`
 
 Recommended daily-use mode.
@@ -58,6 +89,15 @@ Launches with the default profile.
 - If a default profile is configured, the current behavior is isolated mode
 - Equivalent runtime behavior to `cc-use <default-profile>`
 
+### `cc-use status`
+
+Shows the last known auto-routing usability status.
+
+- Reads the status cache from `~/.cc-use/status.json`
+- Shows auto-participating profiles configured under `auto.profiles`
+- Marks cached entries as stale when they exceed `auto.cacheTtlSeconds`
+- Does not mutate routing config
+
 ## Profile and session layout
 
 Provider configs live under:
@@ -83,6 +123,62 @@ Native shared-context mode uses:
 ```text
 ~/.claude/
 ```
+
+Auto-routing metadata lives in:
+
+```text
+~/.cc-use/config.json
+```
+
+with an `auto` block:
+
+```json
+{
+  "auto": {
+    "cacheTtlSeconds": 60,
+    "fallbackOrder": ["deepseek", "mimo-plan"],
+    "profiles": {
+      "deepseek": {
+        "mode": "payg",
+        "check": { "kind": "probe" }
+      },
+      "mimo-plan": {
+        "mode": "token_plan",
+        "check": { "kind": "manual_availability", "available": true }
+      }
+    }
+  }
+}
+```
+
+The status cache lives under:
+
+```text
+~/.cc-use/status.json
+```
+
+`status.json` is a sanitized cache, not a source of truth. It stores `UsabilityResult` entries and must not contain API keys, raw provider responses, or full account payloads.
+
+## Auto routing
+
+Auto routing is preflight-only.
+
+Supported check kinds:
+
+- `probe`: a minimal Anthropic-compatible Messages API request
+- `manual_availability`: a configured boolean
+- `api`: reserved for explicit balance adapters
+
+The current implementation has no bundled real balance adapter. Unsupported `api` adapters fail closed as `check_failed`.
+
+`recordUsage` is parsed for forward compatibility only. The current implementation does not write a usage ledger and does not persist before/after balance deltas.
+
+Auto routing does not:
+
+- switch providers mid-run
+- score provider or model quality
+- infer token-plan quota
+- change `cc-use <profile>` into shared mode
 
 ## History import
 

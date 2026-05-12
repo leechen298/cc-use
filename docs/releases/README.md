@@ -15,3 +15,4 @@ Use these files as the source of truth for:
 - [0.2.2](./0.2.2.md) — Windows test stability, release automation, naming cleanup
 - [0.2.3](./0.2.3.md) — DeepSeek history sanitization and repository guidance updates
 - [0.3.0](./0.3.0.md) — MiMo support, shared-context `with` mode, explicit `isolate` mode
+- [0.4.0](./0.4.0.md) — auto profile routing, usability status cache, `cc-use status`

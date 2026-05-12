@@ -4,6 +4,47 @@ This file tracks user-visible product iterations at a higher level than git comm
 
 Detailed release notes live under [`docs/releases/`](./releases/README.md).
 
+## 0.4.0
+
+Release-note source: [`docs/releases/0.4.0.md`](./releases/0.4.0.md)
+
+### Added
+
+- `cc-use auto`
+  - Selects the first usable configured profile before launch
+  - Keeps the selected launch isolated by default
+- `cc-use with auto`
+  - Uses the same auto profile routing path
+  - Launches the selected profile in shared native `~/.claude/` mode
+- `cc-use status`
+  - Shows the last known auto-routing usability cache
+- Auto-routing configuration under `~/.cc-use/config.json`
+  - `fallbackOrder`
+  - per-profile `check` blocks
+  - cache TTL
+- Checker/router split
+  - checker produces `UsabilityResult`
+  - router only selects profiles where `usable === true`
+
+### Checks
+
+- `probe`
+  - Reuses the doctor Messages API probe with a minimal request
+- `manual_availability`
+  - Lets a profile participate without live provider probing
+- `api`
+  - Schema path is wired for future balance adapters
+  - No concrete balance adapter is bundled in this release
+
+### Clarified
+
+- `cc-use auto` preserves the current isolated default behavior
+- `cc-use with auto` is the shared-context form
+- Bare `cc-use <profile>` still means isolated mode
+- No mid-run provider switching is introduced
+- `status.json` is a sanitized cache, not a source of truth
+- `recordUsage` is parsed for forward compatibility only; no usage ledger is written
+
 ## 0.3.0
 
 Release-note source: [`docs/releases/0.3.0.md`](./releases/0.3.0.md)
