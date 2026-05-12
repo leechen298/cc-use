@@ -1,11 +1,19 @@
 # cc-use v0.4 Spec Overview
 
-> This document describes the proposed `v0.4` feature line for automatic profile routing.  
+> This document describes the `v0.4` auto profile routing design and current MVP implementation status.
 > It is a maintainers' technical design summary, not a release note.
 
 ## Positioning
 
 `v0.4` adds **preflight automatic profile selection** on top of the existing `v0.3` launch model.
+
+Auto profile routing has been implemented on `main` for this phase. The scope is still narrow:
+
+- select a usable profile before launching Claude Code
+- keep launch mode behavior unchanged after a profile is selected
+- preserve existing shorthand semantics such as `cc-use <profile>` launching isolated
+
+Do not treat this document as an npm release statement. It describes the implementation state in the repository, not whether a published package or GitHub release already contains the feature.
 
 The routing unit is intentionally **profile**, not provider and not model.
 
@@ -18,6 +26,31 @@ That is the correct abstraction for `cc-use` because the launcher already operat
 This phase should be understood as:
 
 **shared-context and isolated launch modes + automatic preflight routing for usable profiles**
+
+## Implementation status
+
+Implemented:
+
+- `cc-use auto`
+- `cc-use with auto`
+- `cc-use status`
+- `UsabilityResult`
+- checker/router split
+- status cache in `~/.cc-use/status.json`
+- `probe` check using the existing doctor Messages API probe
+- `manual_availability`
+- `api` check path wired through `readBalance()`, but no concrete adapter implemented yet
+
+Not implemented / reserved:
+
+- real provider balance adapters
+- usage ledger
+- before/after balance delta recording
+- config editing commands
+- mid-run provider switching
+- task/model quality routing
+
+`src/balance.ts` is currently a placeholder adapter layer. The `api` check kind is parsed and routed through `readBalance()`, but unsupported adapters fail closed as `check_failed`.
 
 ## Product boundary
 
@@ -40,6 +73,18 @@ Out of scope for this phase:
 - CRUD commands for editing auto-routing config
 
 ## CLI semantics
+
+Current `v0.4` semantics:
+
+| Command | `v0.4` meaning |
+| --- | --- |
+| `cc-use auto` | auto-select usable profile, launch isolated |
+| `cc-use with auto` | auto-select usable profile, launch shared native `~/.claude/` |
+| `cc-use <profile>` | launch named profile isolated |
+| `cc-use with <profile>` | launch named profile shared |
+| `cc-use isolate <profile>` | launch named profile isolated |
+
+`v0.4` intentionally preserves existing shorthand behavior. Changing the default to shared/with-first mode is planned for a later iteration and is not part of `v0.4`.
 
 ### `cc-use auto`
 
@@ -173,6 +218,8 @@ Interpretation:
 Only pay-as-you-go profiles participate in balance recording for this phase.
 
 Balance API adapters are explicit, per-provider capabilities. `cc-use` must not assume every pay-as-you-go provider exposes a usable balance API, and it must not scrape provider consoles or call undocumented billing endpoints.
+
+The `api` check kind is part of the `v0.4` config schema, but concrete provider balance adapters are not implemented in the current MVP. Unsupported adapters fail closed as `check_failed`.
 
 For pay-as-you-go profiles without a balance adapter, probe-based usability is the recommended default. A recent successful probe can be reused within cache TTL as last-known usability. If the cached status is unavailable, stale, or missing, `cc-use auto` should silently run a fresh minimal probe before skipping the profile.
 
@@ -309,7 +356,7 @@ Suggested filename:
 
 This file is a cache, not a source of truth.
 
-It stores the last known usability result for each auto-participating profile.
+It stores the last known sanitized `UsabilityResult` for each auto-participating profile.
 
 Responsibilities:
 
@@ -322,23 +369,30 @@ Non-responsibilities:
 - it must not override config
 - it must not be treated as durable truth
 - it must not silently make unknown profiles routable
+- it must not store API keys, raw provider responses, or full account payloads
 
 Cache behavior:
 
 - no cache -> run live check
-- stale cache -> run live check
-- fresh cache -> may reuse
-- fresh successful probe cache -> may be treated as currently usable
-- unavailable cache -> run a fresh minimal probe before skipping the profile
+- stale successful cache -> run live check
+- fresh usable cache -> may be reused
+- unknown or unusable cache entries are not selected by the router
+- unavailable cache -> run a fresh check before skipping the profile
 - live check fails -> write `usable: false` with `reason: 'check_failed'`
 
 ## Optional usage snapshots for pay-as-you-go
 
-This phase may optionally record before/after balance snapshots for supported pay-as-you-go profiles.
+This phase reserves the shape for before/after balance snapshots for supported pay-as-you-go profiles.
 
-The MVP implementation may parse `recordUsage` for forward compatibility without producing a usage ledger until at least one stable balance adapter exists.
+The current MVP parses `recordUsage` for forward compatibility only.
 
-The behavior is intentionally narrow:
+Current implementation status:
+
+- no usage ledger is written
+- no before/after balance delta is persisted
+- no bundled provider balance adapter exists yet
+
+The reserved future behavior should stay intentionally narrow:
 
 - before launch, read balance if `recordUsage` is enabled and the profile uses a supported balance adapter
 - after the child process exits, read balance again
@@ -360,35 +414,28 @@ Routing must work even if usage recording is disabled or unavailable.
 Auto-routing chooses **which profile to launch**.
 It does not change **how the selected mode launches**.
 
-## Suggested module boundaries
+## Implemented module map
 
-Recommended additions:
+- `src/auto.ts`: candidate resolution, usability checks, routing selection
+- `src/status.ts`: status cache read/write, sanitization, `cc-use status`
+- `src/balance.ts`: balance adapter interface placeholder
+- `src/doctor.ts`: reusable minimal Messages API probe
+- `src/cli.ts`: command dispatch for `auto`, `with auto`, and `status`
+- `src/config.ts`: parsing `auto` config block
+- `src/paths.ts`: `STATUS_FILE`
 
-```text
-src/
-├── auto.ts        # candidate resolution + routing orchestration
-├── status.ts      # status cache read/write + CLI rendering
-├── balance.ts     # payg balance adapters
-```
+## v0.4 acceptance checklist
 
-Recommended refactor:
-
-- extract a reusable probe helper from `doctor.ts`
-- keep `exec.ts` focused on launching only
-- keep `cli.ts` responsible for command dispatch, not routing rules
-
-## Test focus
-
-Minimum behavioral coverage for this phase:
-
-- `cc-use auto` picks default when default is usable
-- `cc-use auto` falls back when default is not usable
-- `cc-use with auto` still launches with native `~/.claude/`
+- `pnpm build` passes
+- `pnpm test` passes
+- `cc-use auto` selects the first usable profile
+- `cc-use with auto` uses native `~/.claude/`
 - unknown profiles are skipped
-- stale cache triggers a live re-check
-- `check_failed` is persisted as unusable
-- router uses only `usable`, never `reason`
-- `status` output distinguishes usable state from diagnostic reason
+- stale cache triggers recheck
+- missing profile writes `check_failed`
+- `status.json` does not contain secrets
+- docs clearly say no mid-run switching
+- docs clearly say no real balance adapter is bundled yet
 
 ## Non-goals
 
