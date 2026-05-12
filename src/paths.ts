@@ -7,6 +7,7 @@ export const CC_USE_DIR = CC_USE_DIR_EXPLICIT ? process.env.CC_USE_DIR! : join(H
 export const PROVIDERS_DIR = join(CC_USE_DIR, 'providers');
 export const SESSIONS_DIR = join(CC_USE_DIR, 'sessions');
 export const CONFIG_FILE = join(CC_USE_DIR, 'config.json');
+export const STATUS_FILE = join(CC_USE_DIR, 'status.json');
 export const NATIVE_CLAUDE_DIR = join(HOME, '.claude');
 
 export function profilePath(name: string): string {

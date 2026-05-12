@@ -57,3 +57,30 @@ test('runDoctor with probe=true does call fetch (once)', async () => {
     globalThis.fetch = realFetch;
   }
 });
+
+test('probeMessagesApi treats non-JSON gateway errors as check failures', async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    return new Response('<html>bad gateway</html>', {
+      status: 502,
+      statusText: 'Bad Gateway',
+      headers: { 'content-type': 'text/html' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const result = await doctorMod.probeMessagesApi({
+      name: 'deepseek',
+      source: join(providersDir, 'deepseek.json'),
+      env: {
+        ANTHROPIC_BASE_URL: 'https://api.deepseek.com/anthropic',
+        ANTHROPIC_AUTH_TOKEN: 'sk-test',
+      },
+    });
+    assert.equal(result.status, 'failed');
+    assert.equal(result.errorType, 'invalid_json');
+    assert.equal(result.httpStatus, 502);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});

@@ -19,12 +19,15 @@ npm install -g cc-use
 ```bash
 cc-use init                       # 交互式：选模板、输入 API Key
 cc-use with deepseek              # 用 DeepSeek 启动，复用原生 ~/.claude（推荐日常使用）
+cc-use with auto                  # 自动选择可用 profile，复用原生 ~/.claude
 cc-use deepseek -p "审查 X"       # 一次性查询（profile 后的参数全部透传给 claude）
+cc-use auto -p "审查 X"           # 自动选择可用 profile，使用隔离会话
 cc-use isolate deepseek           # 用 DeepSeek 启动，显式隔离会话
 cc-use deepseek                   # 用 DeepSeek 启动（隔离会话，兼容简写）
 cc-use                            # 用默认 profile 启动（隔离会话）
 
 cc-use ls                         # 列已配置的 profile
+cc-use status                     # 查看 auto routing 的最近可用性状态
 cc-use remove deepseek            # 移除 profile 配置（--delete-session 同时删除隔离会话历史）
 cc-use default [profile]          # 显示 / 设置默认 profile
 cc-use doctor [profile]           # 校验 profile（--all 校验所有）
@@ -37,6 +40,42 @@ cc-use --help                     # 完整命令参考
 `import-history` 默认原样拷贝历史。DeepSeek 或其他 provider 无法恢复 Claude thinking / 工具调用历史时，追加 `--sanitize`；它会保留可读文本，删除 Claude thinking 块，并把历史工具调用 / 媒体 / 工具结果块转成普通文本标记后再写入 `~/.cc-use/sessions/<profile>/`。
 
 profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。`cc-use with <profile>` 为推荐日常用法 —— 复用原生 `~/.claude/` 上下文（聊天记录、skills、projects）。`cc-use isolate <profile>`（或简写 `cc-use <profile>`）使用独立的 `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`。
+
+## 自动路由
+
+`cc-use auto` 会在启动 Claude Code 前选择第一个可用 profile。调度单位是 profile，不是 provider，也不是 model。
+
+在 `~/.cc-use/config.json` 中配置 auto routing：
+
+```json
+{
+  "default": "deepseek",
+  "auto": {
+    "cacheTtlSeconds": 60,
+    "fallbackOrder": ["deepseek", "mimo"],
+    "profiles": {
+      "deepseek": {
+        "mode": "payg",
+        "check": { "kind": "probe" }
+      },
+      "mimo": {
+        "mode": "token_plan",
+        "check": { "kind": "manual_availability", "available": true }
+      }
+    }
+  }
+}
+```
+
+支持的检查方式：
+
+- `probe`：发送一次 `max_tokens: 1` 的最小 Anthropic-compatible Messages 请求，判断当前 profile 是否能完成一次轻量模型调用。
+- `manual_availability`：读取配置里的布尔值。
+- `api`：预留给显式实现的各平台余额 adapter；未实现的 adapter 会按 `check_failed` 处理。
+
+`status.json` 只保存最近一次可用性缓存。TTL 内的成功 probe 可以复用；过期或不可用状态会在路由前重新检查。probe 成功不保证长任务一定跑完，`cc-use` 也不会在任务中途自动切换 provider。
+
+`recordUsage` 是给未来 pay-as-you-go 余额快照预留的字段。当前 MVP 只做兼容解析，不会写入用量账本。
 
 ## 内置 provider
 

@@ -141,6 +141,209 @@ test('remove is a reserved subcommand name', () => {
   assert.equal(isReserved('remove'), true);
 });
 
+test('auto is a reserved subcommand name', () => {
+  assert.equal(isReserved('auto'), true);
+});
+
+test('status is a reserved subcommand name', () => {
+  assert.equal(isReserved('status'), true);
+});
+
+test('cc-use auto selects usable default profile in isolated mode', { skip: posixOnly }, () => {
+  setupProfile('auto-def');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'auto-def',
+      auto: {
+        fallbackOrder: [],
+        profiles: {
+          'auto-def': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['auto']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'auto-def')}\n`));
+  assert.match(result.stderr, /selected 'auto-def' \(manual_available\)/);
+});
+
+test('cc-use auto falls back when default is unusable', { skip: posixOnly }, () => {
+  setupProfile('auto-no');
+  setupProfile('auto-yes');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'auto-no',
+      auto: {
+        fallbackOrder: ['auto-yes'],
+        profiles: {
+          'auto-no': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: false },
+          },
+          'auto-yes': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['auto']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'auto-yes')}\n`));
+  assert.match(result.stderr, /selected 'auto-yes' \(manual_available\)/);
+});
+
+test('cc-use with auto selects usable profile in shared mode', { skip: posixOnly }, () => {
+  setupProfile('auto-shared');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'auto-shared',
+      auto: {
+        fallbackOrder: [],
+        profiles: {
+          'auto-shared': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['with', 'auto']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+  assert.match(result.stderr, /selected 'auto-shared' \(manual_available\)/);
+});
+
+test('cc-use status prints auto profile cache state', () => {
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      auto: {
+        fallbackOrder: ['status-profile'],
+        profiles: {
+          'status-profile': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+  const result = run(['status']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /status-profile/);
+  assert.match(result.stdout, /unknown/);
+});
+
+test('cc-use auto rechecks stale usable cache before selecting', { skip: posixOnly }, () => {
+  setupProfile('stale-default');
+  setupProfile('stale-fallback');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'stale-default',
+      auto: {
+        cacheTtlSeconds: 1,
+        fallbackOrder: ['stale-fallback'],
+        profiles: {
+          'stale-default': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: false },
+          },
+          'stale-fallback': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+  writeFileSync(
+    join(ccUseDir, 'status.json'),
+    JSON.stringify({
+      profiles: {
+        'stale-default': {
+          profileName: 'stale-default',
+          usable: true,
+          reason: 'manual_available',
+          checkedAt: '2000-01-01T00:00:00.000Z',
+        },
+      },
+    }),
+  );
+
+  const result = run(['auto']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'stale-fallback')}\n`));
+  assert.match(result.stderr, /selected 'stale-fallback'/);
+});
+
+test('cc-use auto persists check_failed for missing profile', () => {
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      auto: {
+        fallbackOrder: ['missing-auto'],
+        profiles: {
+          'missing-auto': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+  const result = run(['auto']);
+  assert.notEqual(result.status, 0);
+  const status = JSON.parse(readFileSync(join(ccUseDir, 'status.json'), 'utf-8'));
+  assert.equal(status.profiles['missing-auto'].usable, false);
+  assert.equal(status.profiles['missing-auto'].reason, 'check_failed');
+});
+
+test('cc-use auto skips unknown candidates and selects fallback', { skip: posixOnly }, () => {
+  setupProfile('unknown-default');
+  setupProfile('unknown-fallback');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'unknown-default',
+      auto: {
+        fallbackOrder: ['unknown-fallback'],
+        profiles: {
+          'unknown-fallback': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['auto']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'unknown-fallback')}\n`));
+  assert.match(result.stderr, /selected 'unknown-fallback'/);
+});
+
 test('cc-use remove without profile name errors', () => {
   const result = run(['remove']);
   assert.notEqual(result.status, 0);
@@ -228,6 +431,13 @@ test('--help stdout includes remove subcommand usage', () => {
   const result = run(['--help']);
   assert.equal(result.status, 0);
   assert.match(result.stdout, /cc-use remove <profile>/);
+});
+
+test('--help stdout includes auto and status usage', () => {
+  const result = run(['--help']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /cc-use auto/);
+  assert.match(result.stdout, /cc-use status/);
 });
 
 // --- no-default startup recovery ---

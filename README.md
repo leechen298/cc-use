@@ -19,12 +19,15 @@ Requires Node ≥ 18 and Claude Code (`npm install -g @anthropic-ai/claude-code`
 ```bash
 cc-use init                       # interactive setup: pick template, paste API key
 cc-use with deepseek              # launch via DeepSeek, reuse native ~/.claude (recommended daily use)
+cc-use with auto                  # auto-select a usable profile, reuse native ~/.claude
 cc-use deepseek -p "review X"     # one-shot query (extra args pass through to claude)
+cc-use auto -p "review X"         # auto-select a usable profile, isolated session
 cc-use isolate deepseek           # launch via DeepSeek with explicit isolated session
 cc-use deepseek                   # launch via DeepSeek (isolated session, compatible shorthand)
 cc-use                            # launch with the default profile (isolated session)
 
 cc-use ls                         # list configured profiles
+cc-use status                     # show last known auto-routing status
 cc-use remove deepseek            # remove profile config (--delete-session removes isolated history)
 cc-use default [profile]          # show or set the default profile
 cc-use doctor [profile]           # validate profile (--all checks all)
@@ -37,6 +40,42 @@ cc-use --help                     # full command reference
 `import-history` copies the original transcript by default. For DeepSeek or other providers that cannot resume Claude thinking/tool-call history, add `--sanitize`; this keeps readable transcript text, removes Claude thinking blocks, and converts historical tool/media/result blocks into plain text markers before copying into `~/.cc-use/sessions/<profile>/`.
 
 Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). `cc-use with <profile>` is the recommended daily driver — it shares your native `~/.claude/` context (history, skills, projects). Use `cc-use isolate <profile>` (or the shorthand `cc-use <profile>`) for an isolated `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`.
+
+## Auto routing
+
+`cc-use auto` selects the first usable profile before launching Claude Code. The routing unit is the profile, not the provider or model.
+
+Configure auto routing in `~/.cc-use/config.json`:
+
+```json
+{
+  "default": "deepseek",
+  "auto": {
+    "cacheTtlSeconds": 60,
+    "fallbackOrder": ["deepseek", "mimo"],
+    "profiles": {
+      "deepseek": {
+        "mode": "payg",
+        "check": { "kind": "probe" }
+      },
+      "mimo": {
+        "mode": "token_plan",
+        "check": { "kind": "manual_availability", "available": true }
+      }
+    }
+  }
+}
+```
+
+Supported checks:
+
+- `probe` sends a minimal Anthropic-compatible Messages request with `max_tokens: 1` to verify the current profile can make a tiny model call.
+- `manual_availability` uses a configured boolean.
+- `api` is reserved for explicit per-provider balance adapters. Unsupported adapters fail closed as `check_failed`.
+
+`status.json` stores only the last known usability cache. A successful probe can be reused within TTL; stale or unusable entries are checked again before routing. Probe success does not guarantee a long Claude Code session will finish, and `cc-use` does not switch providers mid-run.
+
+`recordUsage` is reserved for future pay-as-you-go balance snapshots. The current MVP parses the field for forward compatibility but does not write a usage ledger.
 
 ## Built-in providers
 

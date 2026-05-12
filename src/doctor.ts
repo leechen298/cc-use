@@ -1,9 +1,124 @@
-import { listProfiles, loadProfile, looksLikePlaceholder } from './profile.js';
+import { listProfiles, loadProfile, looksLikePlaceholder, type Profile } from './profile.js';
 import { sessionDirFor } from './paths.js';
 
 export interface DoctorOptions {
   profile: string;
   probe: boolean;
+}
+
+export type ProbeResult =
+  | {
+      status: 'ok';
+      httpStatus: number;
+      statusText: string;
+      bodyText: string;
+      bodyJson: unknown;
+    }
+  | {
+      status: 'rejected';
+      httpStatus: number;
+      statusText: string;
+      bodyText: string;
+      bodyJson: unknown;
+      errorType?: string;
+      errorMessage?: string;
+    }
+  | {
+      status: 'failed';
+      errorType: string;
+      errorMessage: string;
+      httpStatus?: number;
+      statusText?: string;
+      bodyText?: string;
+    };
+
+export async function probeMessagesApi(profile: Profile): Promise<ProbeResult> {
+  const token = profile.env.ANTHROPIC_AUTH_TOKEN ?? '';
+  const model = profile.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5';
+  const url = buildMessagesUrl(profile.env.ANTHROPIC_BASE_URL!);
+
+  let resp: Response;
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': token,
+        authorization: `Bearer ${token}`,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'ping' }],
+      }),
+    });
+  } catch (e) {
+    return {
+      status: 'failed',
+      errorType: 'network_error',
+      errorMessage: (e as Error).message,
+    };
+  }
+
+  let bodyText = '';
+  try {
+    bodyText = await resp.text();
+  } catch (e) {
+    return {
+      status: 'failed',
+      errorType: 'read_error',
+      errorMessage: (e as Error).message,
+      httpStatus: resp.status,
+      statusText: resp.statusText,
+    };
+  }
+
+  let bodyJson: unknown;
+  try {
+    bodyJson = bodyText ? JSON.parse(bodyText) : undefined;
+  } catch {
+    return {
+      status: 'failed',
+      errorType: 'invalid_json',
+      errorMessage: 'response body is not valid JSON',
+      httpStatus: resp.status,
+      statusText: resp.statusText,
+      bodyText,
+    };
+  }
+
+  if (resp.ok && isMessageShape(bodyJson)) {
+    return {
+      status: 'ok',
+      httpStatus: resp.status,
+      statusText: resp.statusText,
+      bodyText,
+      bodyJson,
+    };
+  }
+
+  if (bodyJson === undefined || resp.ok) {
+    return {
+      status: 'failed',
+      errorType: 'invalid_response',
+      errorMessage: 'response body is not an Anthropic Messages response',
+      httpStatus: resp.status,
+      statusText: resp.statusText,
+      bodyText,
+    };
+  }
+
+  const err = describeAnthropicError(bodyJson);
+  return {
+    status: 'rejected',
+    httpStatus: resp.status,
+    statusText: resp.statusText,
+    bodyText,
+    bodyJson,
+    errorType: err.type ?? `http_${resp.status}`,
+    errorMessage: err.message ?? 'response body is not an Anthropic Messages response',
+  };
 }
 
 export async function runDoctor(opts: DoctorOptions): Promise<number> {
@@ -47,68 +162,39 @@ export async function runDoctor(opts: DoctorOptions): Promise<number> {
   const url = buildMessagesUrl(profile.env.ANTHROPIC_BASE_URL!);
   process.stdout.write(`\nProbing ${url} (model: ${model})...\n`);
 
-  let resp: Response;
-  try {
-    resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': token,
-        authorization: `Bearer ${token}`,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1,
-        messages: [{ role: 'user', content: 'ping' }],
-      }),
-    });
-  } catch (e) {
-    process.stderr.write(`  FAIL: network error: ${(e as Error).message}\n`);
+  const result = await probeMessagesApi(profile);
+  if (result.status === 'failed') {
+    process.stderr.write(`  FAIL: ${result.errorType}: ${result.errorMessage}\n`);
     return 1;
   }
 
-  let bodyText = '';
-  try {
-    bodyText = await resp.text();
-  } catch {
-    bodyText = '';
-  }
-
-  let bodyJson: unknown;
-  try {
-    bodyJson = bodyText ? JSON.parse(bodyText) : undefined;
-  } catch {
-    bodyJson = undefined;
-  }
-
-  const summary = `HTTP ${resp.status} ${resp.statusText || ''}`.trim();
-  if (resp.ok && isMessageShape(bodyJson)) {
+  const summary = `HTTP ${result.httpStatus} ${result.statusText || ''}`.trim();
+  if (result.status === 'ok') {
     process.stdout.write(`  OK: ${summary} (Anthropic Messages shape).\n`);
     return 0;
   }
-  if (resp.status === 401 || resp.status === 403) {
+  if (result.httpStatus === 401 || result.httpStatus === 403) {
     process.stderr.write(`  AUTH: ${summary}. Endpoint speaks Anthropic but key is rejected.\n`);
-    if (typeof bodyText === 'string' && bodyText.length < 400) {
-      process.stderr.write(`        body: ${bodyText.replace(/\s+/g, ' ').trim()}\n`);
+    if (typeof result.bodyText === 'string' && result.bodyText.length < 400) {
+      process.stderr.write(`        body: ${result.bodyText.replace(/\s+/g, ' ').trim()}\n`);
     }
     return 1;
   }
-  if (resp.status === 404) {
+  if (result.httpStatus === 404) {
     process.stderr.write(
       `  ENDPOINT: ${summary}. Wrong base_url or this provider doesn't expose /v1/messages.\n`,
     );
     return 1;
   }
-  if (isAnthropicError(bodyJson)) {
-    process.stderr.write(`  ERR: ${summary}. Anthropic-style error: ${describeError(bodyJson)}\n`);
+  if (isAnthropicError(result.bodyJson)) {
+    process.stderr.write(`  ERR: ${summary}. Anthropic-style error: ${describeError(result.bodyJson)}\n`);
     return 1;
   }
   process.stderr.write(
     `  UNKNOWN: ${summary}. Body does not look like Anthropic Messages API.\n`,
   );
-  if (typeof bodyText === 'string' && bodyText.length < 400) {
-    process.stderr.write(`           body: ${bodyText.replace(/\s+/g, ' ').trim()}\n`);
+  if (typeof result.bodyText === 'string' && result.bodyText.length < 400) {
+    process.stderr.write(`           body: ${result.bodyText.replace(/\s+/g, ' ').trim()}\n`);
   }
   return 1;
 }
@@ -133,9 +219,17 @@ function isAnthropicError(v: unknown): boolean {
 }
 
 function describeError(v: unknown): string {
+  const err = describeAnthropicError(v);
+  return `${err.type ?? 'unknown'}: ${err.message ?? ''}`;
+}
+
+function describeAnthropicError(v: unknown): { type?: string; message?: string } {
   const o = v as Record<string, any>;
   const err = o.error || {};
-  return `${err.type ?? 'unknown'}: ${err.message ?? ''}`;
+  return {
+    type: typeof err.type === 'string' ? err.type : undefined,
+    message: typeof err.message === 'string' ? err.message : undefined,
+  };
 }
 
 function isSensitive(key: string): boolean {

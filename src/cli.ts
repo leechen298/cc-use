@@ -16,6 +16,8 @@ import { runInit } from './init.js';
 import { runDoctor, runDoctorAll } from './doctor.js';
 import { runImportHistory } from './importHistory.js';
 import { runRemove } from './remove.js';
+import { selectAutoProfile } from './auto.js';
+import { runStatus } from './status.js';
 import { listTemplates } from './templates.js';
 import { USAGE } from './help.js';
 import { sessionDirFor, NATIVE_CLAUDE_DIR } from './paths.js';
@@ -78,6 +80,10 @@ async function main(): Promise<void> {
       process.exit(await runImportHistory(parseImportArgs(rest)));
     case 'remove':
       process.exit(await runRemove(parseRemoveArgs(rest)));
+    case 'status':
+      process.exit(runStatus());
+    case 'auto':
+      process.exit(await launchAuto(rest, false));
     case 'with':
       process.exit(await launchWithProfile(rest));
     case 'isolate':
@@ -144,9 +150,22 @@ async function launchWithProfile(args: string[]): Promise<number> {
     return 1;
   }
   const passThroughArgs = args.slice(1);
+  if (name === 'auto') {
+    return await launchAuto(passThroughArgs, true);
+  }
   const resolved = await resolveLaunchProfile(name);
   if (typeof resolved === 'number') return resolved;
   return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: NATIVE_CLAUDE_DIR });
+}
+
+async function launchAuto(passThroughArgs: string[], sharedContext: boolean): Promise<number> {
+  const selected = await selectAutoProfile();
+  if (typeof selected === 'number') return selected;
+  const resolved = await resolveLaunchProfile(selected);
+  if (typeof resolved === 'number') return resolved;
+  return spawnClaude(resolved, passThroughArgs, {
+    claudeConfigDir: sharedContext ? NATIVE_CLAUDE_DIR : sessionDirFor(resolved.name),
+  });
 }
 
 async function launchIsolated(args: string[]): Promise<number> {

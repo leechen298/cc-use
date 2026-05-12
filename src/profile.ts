@@ -18,6 +18,8 @@ export const RESERVED_NAMES = new Set([
   'with',
   'isolate',
   'remove',
+  'auto',
+  'status',
 ]);
 
 const NAME_RE = /^[A-Za-z_][A-Za-z0-9_-]*$/;
