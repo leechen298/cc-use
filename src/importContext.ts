@@ -282,6 +282,13 @@ function buildPlan(
       }
       case 'settings-safe': {
         const src = join(nativeDir, 'settings.json');
+        if (isSymlink(src)) {
+          skipped.push({
+            category: 'settings-safe',
+            reason: 'symlink skipped: settings.json',
+          });
+          break;
+        }
         if (!isRealFile(src)) {
           skipped.push({
             category: 'settings-safe',
@@ -341,6 +348,13 @@ function buildPlan(
     switch (cat) {
       case 'settings-raw': {
         const src = join(nativeDir, 'settings.json');
+        if (isSymlink(src)) {
+          skipped.push({
+            category: 'settings-raw',
+            reason: 'symlink skipped: settings.json',
+          });
+          break;
+        }
         if (!isRealFile(src)) {
           skipped.push({
             category: 'settings-raw',
@@ -356,11 +370,15 @@ function buildPlan(
         const srcFile = join(nativeDir, 'mcp.json');
         const srcDir = join(nativeDir, 'mcp');
         let found = false;
-        if (isRealFile(srcFile)) {
+        if (isSymlink(srcFile)) {
+          skipped.push({ category: 'mcp', reason: 'symlink skipped: mcp.json' });
+        } else if (isRealFile(srcFile)) {
           add('mcp', srcFile, join(targetDir, 'mcp.json'), 'file');
           found = true;
         }
-        if (isRealDirectory(srcDir)) {
+        if (isSymlink(srcDir)) {
+          skipped.push({ category: 'mcp', reason: 'symlink skipped: mcp' });
+        } else if (isRealDirectory(srcDir)) {
           add('mcp', srcDir, join(targetDir, 'mcp'), 'dir');
           found = true;
         }
@@ -373,11 +391,15 @@ function buildPlan(
         const srcDir = join(nativeDir, 'hooks');
         const srcFile = join(nativeDir, 'hooks.json');
         let found = false;
-        if (isRealDirectory(srcDir)) {
+        if (isSymlink(srcDir)) {
+          skipped.push({ category: 'hooks', reason: 'symlink skipped: hooks' });
+        } else if (isRealDirectory(srcDir)) {
           add('hooks', srcDir, join(targetDir, 'hooks'), 'dir');
           found = true;
         }
-        if (isRealFile(srcFile)) {
+        if (isSymlink(srcFile)) {
+          skipped.push({ category: 'hooks', reason: 'symlink skipped: hooks.json' });
+        } else if (isRealFile(srcFile)) {
           add('hooks', srcFile, join(targetDir, 'hooks.json'), 'file');
           found = true;
         }
@@ -412,6 +434,14 @@ function isRealDirectory(p: string): boolean {
 function isRealFile(p: string): boolean {
   try {
     return lstatSync(p).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function isSymlink(p: string): boolean {
+  try {
+    return lstatSync(p).isSymbolicLink();
   } catch {
     return false;
   }

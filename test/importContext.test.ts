@@ -623,14 +623,14 @@ test('runImportContext skips top-level category symlinks', async () => {
   assert.equal(existsSync(join(targetDir, 'skills')), false);
 });
 
-test('runImportContext skips file-level symlinks', async () => {
+test('runImportContext skips file-level symlinks and reports them', async () => {
   const { nativeDir, profile, targetDir } = setupProfile('file-symlink');
   writeFileSync(join(nativeDir, 'real-settings.json'), JSON.stringify({ theme: 'dark' }));
   symlinkSync(join(nativeDir, 'real-settings.json'), join(nativeDir, 'settings.json'));
 
   const code = await runImportContext({
     profile,
-    dryRun: false,
+    dryRun: true,
     force: false,
     include: [],
     exclude: [],
@@ -642,6 +642,29 @@ test('runImportContext skips file-level symlinks', async () => {
 
   assert.equal(code, 0);
   assert.equal(existsSync(join(targetDir, 'settings.json')), false);
+});
+
+test('runImportContext reports mcp.json symlink even when mcp dir is copied', async () => {
+  const { nativeDir, profile, targetDir } = setupProfile('mcp-file-symlink');
+  mkdirSync(join(nativeDir, 'mcp'), { recursive: true });
+  writeFileSync(join(nativeDir, 'mcp', 'config.json'), '{}');
+  writeFileSync(join(nativeDir, 'real-mcp.json'), '{}');
+  symlinkSync(join(nativeDir, 'real-mcp.json'), join(nativeDir, 'mcp.json'));
+
+  const code = await runImportContext({
+    profile,
+    dryRun: true,
+    force: false,
+    include: [],
+    exclude: [],
+    includeRisky: ['mcp'],
+    all: false,
+    sanitizeHistory: false,
+    nativeClaudeDir: nativeDir,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(targetDir, 'mcp.json')), false);
 });
 
 test('runImportContext copies missing files into existing target directories', async () => {
