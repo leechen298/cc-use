@@ -151,7 +151,9 @@ export async function runImportContext(opts: ImportContextOptions): Promise<numb
   let sanitizedFiles = 0;
 
   for (const item of plan.toCopy) {
-    if (item.conflict && !opts.force) {
+    if (item.conflict && !opts.force && item.type !== 'dir') {
+      // Files are skipped on conflict. Directories are still traversed so
+      // missing nested files can be copied incrementally.
       continue;
     }
 
@@ -213,7 +215,12 @@ export async function runImportContext(opts: ImportContextOptions): Promise<numb
   process.stdout.write(lines.join('\n        ') + '\n');
 
   if (plan.conflicts.length > 0 && !opts.force) {
-    return 1;
+    // Directory conflicts are handled incrementally (missing nested files are
+    // still copied). Only file-level conflicts should cause non-zero exit.
+    const fileConflicts = plan.conflicts.filter((c) => c.type !== 'dir');
+    if (fileConflicts.length > 0) {
+      return 1;
+    }
   }
   return 0;
 }
@@ -245,7 +252,7 @@ function buildPlan(
     switch (cat) {
       case 'projects': {
         const srcProjects = join(nativeDir, 'projects');
-        if (!existsSync(srcProjects)) {
+        if (!isRealDirectory(srcProjects)) {
           skipped.push({ category: 'projects', reason: 'source not found' });
           break;
         }
@@ -299,7 +306,7 @@ function buildPlan(
       }
       case 'agents': {
         const src = join(nativeDir, 'agents');
-        if (!existsSync(src)) {
+        if (!isRealDirectory(src)) {
           skipped.push({ category: 'agents', reason: 'source not found' });
           break;
         }
@@ -309,7 +316,7 @@ function buildPlan(
       }
       case 'skills': {
         const src = join(nativeDir, 'skills');
-        if (!existsSync(src)) {
+        if (!isRealDirectory(src)) {
           skipped.push({ category: 'skills', reason: 'source not found' });
           break;
         }
@@ -319,7 +326,7 @@ function buildPlan(
       }
       case 'commands': {
         const src = join(nativeDir, 'commands');
-        if (!existsSync(src)) {
+        if (!isRealDirectory(src)) {
           skipped.push({ category: 'commands', reason: 'source not found' });
           break;
         }
@@ -353,7 +360,7 @@ function buildPlan(
           add('mcp', srcFile, join(targetDir, 'mcp.json'), 'file');
           found = true;
         }
-        if (existsSync(srcDir)) {
+        if (isRealDirectory(srcDir)) {
           add('mcp', srcDir, join(targetDir, 'mcp'), 'dir');
           found = true;
         }
@@ -366,7 +373,7 @@ function buildPlan(
         const srcDir = join(nativeDir, 'hooks');
         const srcFile = join(nativeDir, 'hooks.json');
         let found = false;
-        if (existsSync(srcDir)) {
+        if (isRealDirectory(srcDir)) {
           add('hooks', srcDir, join(targetDir, 'hooks'), 'dir');
           found = true;
         }
@@ -381,7 +388,7 @@ function buildPlan(
       }
       case 'plugins': {
         const src = join(nativeDir, 'plugins');
-        if (!existsSync(src)) {
+        if (!isRealDirectory(src)) {
           skipped.push({ category: 'plugins', reason: 'source not found' });
           break;
         }
@@ -392,6 +399,14 @@ function buildPlan(
   }
 
   return { toCopy, skipped, conflicts };
+}
+
+function isRealDirectory(p: string): boolean {
+  try {
+    return lstatSync(p).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 function copyDirRecursive(
@@ -410,6 +425,15 @@ function copyDirRecursive(
   let dirs = 0;
   let symlinks = 0;
   let sanitized = 0;
+
+  // Defensive: if src itself is a symlink, do not follow.
+  try {
+    if (lstatSync(src).isSymbolicLink()) {
+      return { files: 0, dirs: 0, symlinks: 1, sanitized: 0 };
+    }
+  } catch {
+    return { files: 0, dirs: 0, symlinks: 0, sanitized: 0 };
+  }
 
   mkdirSync(dst, { recursive: true });
 

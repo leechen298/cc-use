@@ -600,6 +600,71 @@ test('runImportContext skips symlinks instead of following', async () => {
   );
 });
 
+test('runImportContext skips top-level category symlinks', async () => {
+  const { nativeDir, profile, targetDir } = setupProfile('cat-symlink');
+  const realDir = join(nativeDir, 'real-skills');
+  mkdirSync(realDir, { recursive: true });
+  writeFileSync(join(realDir, 'a.md'), 'a');
+  symlinkSync(realDir, join(nativeDir, 'skills'));
+
+  const code = await runImportContext({
+    profile,
+    dryRun: false,
+    force: false,
+    include: [],
+    exclude: [],
+    includeRisky: [],
+    all: false,
+    sanitizeHistory: false,
+    nativeClaudeDir: nativeDir,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(targetDir, 'skills')), false);
+});
+
+test('runImportContext copies missing files into existing target directories', async () => {
+  const { nativeDir, profile, targetDir } = setupProfile('incremental');
+  const srcDir = join(nativeDir, 'agents');
+  mkdirSync(srcDir, { recursive: true });
+  writeFileSync(join(srcDir, 'a.json'), '{"name":"a"}');
+
+  // First sync
+  await runImportContext({
+    profile,
+    dryRun: false,
+    force: false,
+    include: ['agents'],
+    exclude: [],
+    includeRisky: [],
+    all: false,
+    sanitizeHistory: false,
+    nativeClaudeDir: nativeDir,
+  });
+
+  assert.equal(existsSync(join(targetDir, 'agents', 'a.json')), true);
+
+  // Add a new file on native side
+  writeFileSync(join(srcDir, 'b.json'), '{"name":"b"}');
+
+  // Second sync without force — should still copy the new file
+  const code = await runImportContext({
+    profile,
+    dryRun: false,
+    force: false,
+    include: ['agents'],
+    exclude: [],
+    includeRisky: [],
+    all: false,
+    sanitizeHistory: false,
+    nativeClaudeDir: nativeDir,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(targetDir, 'agents', 'b.json')), true);
+  assert.equal(readFileSync(join(targetDir, 'agents', 'a.json'), 'utf8'), '{"name":"a"}');
+});
+
 test('runImportContext --sanitize-history only affects jsonl transcripts', async () => {
   const { nativeDir, profile, targetDir } = setupProfile('sanitize');
   const projectDir = makeProject('sanitize-project', nativeDir);
