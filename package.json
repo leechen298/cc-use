@@ -46,8 +46,8 @@
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
-    "test": "tsx --test test/profile.test.ts test/url.test.ts test/exec.test.ts test/init.test.ts test/doctor.test.ts test/importHistory.test.ts test/cli.test.ts test/wizard.test.ts",
-    "coverage": "pnpm build && c8 --all --src src --include \"src/**/*.ts\" --include \"dist/**/*.js\" --exclude \"test/**/*.ts\" --reporter text --reporter lcov tsx --test test/profile.test.ts test/url.test.ts test/exec.test.ts test/init.test.ts test/doctor.test.ts test/importHistory.test.ts test/cli.test.ts test/wizard.test.ts",
+    "test": "tsx --test test/profile.test.ts test/url.test.ts test/exec.test.ts test/init.test.ts test/doctor.test.ts test/importHistory.test.ts test/cli.test.ts test/wizard.test.ts test/auto.test.ts",
+    "coverage": "pnpm build && c8 --all --src src --include \"src/**/*.ts\" --include \"dist/**/*.js\" --exclude \"test/**/*.ts\" --reporter text --reporter lcov tsx --test test/profile.test.ts test/url.test.ts test/exec.test.ts test/init.test.ts test/doctor.test.ts test/importHistory.test.ts test/cli.test.ts test/wizard.test.ts test/auto.test.ts",
     "prepublishOnly": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc"
   },
   "dependencies": {},

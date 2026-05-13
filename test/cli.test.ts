@@ -55,6 +55,10 @@ function run(args: string[], envOverrides?: Record<string, string>) {
   });
 }
 
+function isolatedCcUseDir(prefix: string): string {
+  return mkdtempSync(join(tmpdir(), prefix));
+}
+
 test('cc-use with no default profile errors in non-TTY', () => {
   const result = run(['with']);
   assert.notEqual(result.status, 0);
@@ -137,6 +141,92 @@ test('--help stdout includes with subcommand usage', () => {
   const result = run(['--help']);
   assert.equal(result.status, 0);
   assert.match(result.stdout, /cc-use with \[profile\]/);
+});
+
+test('--version prints package version', () => {
+  const result = run(['--version']);
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout.trim(), '0.5.0');
+});
+
+test('ls reports no profiles for an empty config dir', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-empty-ls-');
+  const result = run(['ls'], { CC_USE_DIR: dir });
+  assert.equal(result.status, 0);
+  assert.match(result.stderr, /no profiles configured/);
+});
+
+test('default command prints, sets, and unsets configured default', () => {
+  setupProfile('default-target');
+  let result = run(['default', 'default-target']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /default profile set to 'default-target'/);
+
+  result = run(['default']);
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout.trim(), 'default-target');
+
+  result = run(['default', '--unset']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /default unset/);
+
+  result = run(['default']);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /no default set/);
+});
+
+test('default command rejects missing profile names', () => {
+  const result = run(['default', 'does-not-exist']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /profile 'does-not-exist' not found/);
+});
+
+test('init argument parser rejects unknown flags and extra positional args', () => {
+  let result = run(['init', '--bogus']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use init: unknown flag '--bogus'/);
+
+  result = run(['init', 'deepseek', 'extra']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use init: unexpected argument 'extra'/);
+});
+
+test('doctor argument parser rejects invalid combinations', () => {
+  const emptyDir = isolatedCcUseDir('cc-use-cli-empty-doctor-');
+  let result = run(['doctor'], { CC_USE_DIR: emptyDir });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /profile name required/);
+
+  result = run(['doctor', '--bogus']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use doctor: unknown flag '--bogus'/);
+
+  result = run(['doctor', 'deepseek', 'extra']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use doctor: unexpected argument 'extra'/);
+
+  result = run(['doctor', '--all', 'deepseek']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cannot combine --all with a profile name/);
+});
+
+test('remove and import-history argument parsers reject invalid args', () => {
+  let result = run(['remove', 'one', 'two']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use remove: unexpected argument 'two'/);
+
+  result = run(['import-history', '--bogus']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-history: unknown flag '--bogus'/);
+
+  result = run(['import-history', 'one', 'two']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-history: unexpected argument 'two'/);
+
+  const emptyDir = isolatedCcUseDir('cc-use-cli-empty-import-');
+  result = run(['import-history'], { CC_USE_DIR: emptyDir });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-history: profile name required/);
 });
 
 // --- remove command ---
