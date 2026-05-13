@@ -282,7 +282,7 @@ function buildPlan(
       }
       case 'settings-safe': {
         const src = join(nativeDir, 'settings.json');
-        if (!existsSync(src)) {
+        if (!isRealFile(src)) {
           skipped.push({
             category: 'settings-safe',
             reason: 'settings.json not found',
@@ -341,7 +341,7 @@ function buildPlan(
     switch (cat) {
       case 'settings-raw': {
         const src = join(nativeDir, 'settings.json');
-        if (!existsSync(src)) {
+        if (!isRealFile(src)) {
           skipped.push({
             category: 'settings-raw',
             reason: 'settings.json not found',
@@ -356,7 +356,7 @@ function buildPlan(
         const srcFile = join(nativeDir, 'mcp.json');
         const srcDir = join(nativeDir, 'mcp');
         let found = false;
-        if (existsSync(srcFile)) {
+        if (isRealFile(srcFile)) {
           add('mcp', srcFile, join(targetDir, 'mcp.json'), 'file');
           found = true;
         }
@@ -377,7 +377,7 @@ function buildPlan(
           add('hooks', srcDir, join(targetDir, 'hooks'), 'dir');
           found = true;
         }
-        if (existsSync(srcFile)) {
+        if (isRealFile(srcFile)) {
           add('hooks', srcFile, join(targetDir, 'hooks.json'), 'file');
           found = true;
         }
@@ -404,6 +404,14 @@ function buildPlan(
 function isRealDirectory(p: string): boolean {
   try {
     return lstatSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function isRealFile(p: string): boolean {
+  try {
+    return lstatSync(p).isFile();
   } catch {
     return false;
   }

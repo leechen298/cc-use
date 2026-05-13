@@ -623,6 +623,27 @@ test('runImportContext skips top-level category symlinks', async () => {
   assert.equal(existsSync(join(targetDir, 'skills')), false);
 });
 
+test('runImportContext skips file-level symlinks', async () => {
+  const { nativeDir, profile, targetDir } = setupProfile('file-symlink');
+  writeFileSync(join(nativeDir, 'real-settings.json'), JSON.stringify({ theme: 'dark' }));
+  symlinkSync(join(nativeDir, 'real-settings.json'), join(nativeDir, 'settings.json'));
+
+  const code = await runImportContext({
+    profile,
+    dryRun: false,
+    force: false,
+    include: [],
+    exclude: [],
+    includeRisky: [],
+    all: false,
+    sanitizeHistory: false,
+    nativeClaudeDir: nativeDir,
+  });
+
+  assert.equal(code, 0);
+  assert.equal(existsSync(join(targetDir, 'settings.json')), false);
+});
+
 test('runImportContext copies missing files into existing target directories', async () => {
   const { nativeDir, profile, targetDir } = setupProfile('incremental');
   const srcDir = join(nativeDir, 'agents');
