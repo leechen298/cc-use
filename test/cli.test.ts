@@ -156,6 +156,27 @@ test('ls reports no profiles for an empty config dir', () => {
   assert.match(result.stderr, /no profiles configured/);
 });
 
+test('ls lists profiles and marks configured default', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-ls-profiles-');
+  const providersDir = join(dir, 'providers');
+  mkdirSync(providersDir, { recursive: true });
+  for (const name of ['deepseek', 'kimi']) {
+    writeFileSync(
+      join(providersDir, `${name}.json`),
+      JSON.stringify({
+        ANTHROPIC_BASE_URL: 'https://api.example.com',
+        ANTHROPIC_AUTH_TOKEN: 'sk-test',
+      }),
+    );
+  }
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ default: 'kimi' }));
+
+  const result = run(['ls'], { CC_USE_DIR: dir });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /  deepseek/);
+  assert.match(result.stdout, /\* kimi/);
+});
+
 test('default command prints, sets, and unsets configured default', () => {
   setupProfile('default-target');
   let result = run(['default', 'default-target']);
@@ -210,6 +231,48 @@ test('doctor argument parser rejects invalid combinations', () => {
   assert.match(result.stderr, /cannot combine --all with a profile name/);
 });
 
+test('doctor uses configured default profile when profile is omitted', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-default-doctor-');
+  const providersDir = join(dir, 'providers');
+  mkdirSync(providersDir, { recursive: true });
+  writeFileSync(
+    join(providersDir, 'doctor-default.json'),
+    JSON.stringify({
+      ANTHROPIC_BASE_URL: 'https://api.deepseek.com/anthropic',
+      ANTHROPIC_AUTH_TOKEN: 'sk-test',
+    }),
+  );
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ default: 'doctor-default' }));
+
+  const result = run(['doctor', '--no-probe'], { CC_USE_DIR: dir });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Profile: doctor-default/);
+  assert.match(result.stdout, /Skipping live probe/);
+});
+
+test('init argument parser accepts supported flags', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-init-flags-');
+  const result = run(
+    [
+      'init',
+      'deepseek',
+      '--name',
+      'init-flags-profile',
+      '--token',
+      'sk-test-key-1234',
+      '--non-interactive',
+      '--force',
+      '--set-default',
+      '--no-probe',
+    ],
+    { CC_USE_DIR: dir },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /default profile set to 'init-flags-profile'/);
+  assert.equal(existsSync(join(dir, 'providers', 'init-flags-profile.json')), true);
+});
+
 test('remove and import-history argument parsers reject invalid args', () => {
   let result = run(['remove', 'one', 'two']);
   assert.notEqual(result.status, 0);
@@ -227,6 +290,74 @@ test('remove and import-history argument parsers reject invalid args', () => {
   result = run(['import-history'], { CC_USE_DIR: emptyDir });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /cc-use import-history: profile name required/);
+});
+
+test('import-context argument parser rejects invalid args', () => {
+  let result = run(['import-context', '--include']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-context: --include requires a value/);
+
+  result = run(['import-context', '--exclude']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-context: --exclude requires a value/);
+
+  result = run(['import-context', '--include-risky']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-context: --include-risky requires a value/);
+
+  result = run(['import-context', '--bogus']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-context: unknown flag '--bogus'/);
+
+  result = run(['import-context', 'one', 'two']);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /cc-use import-context: unexpected argument 'two'/);
+});
+
+test('import-context argument parser accepts combined include, exclude, risky, force, all, and sanitize flags', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-import-context-flags-');
+  const home = join(dir, 'home');
+  const localCcUseDir = join(dir, 'cc-use');
+  const providersDir = join(localCcUseDir, 'providers');
+  mkdirSync(join(home, '.claude', 'projects', 'project-a'), { recursive: true });
+  mkdirSync(join(home, '.claude', 'mcp'), { recursive: true });
+  mkdirSync(join(home, '.claude', 'plugins'), { recursive: true });
+  mkdirSync(providersDir, { recursive: true });
+  writeFileSync(join(home, '.claude', 'projects', 'project-a', 'session.jsonl'), '{"type":"user"}\n');
+  writeFileSync(
+    join(providersDir, 'deepseek.json'),
+    JSON.stringify({
+      ANTHROPIC_BASE_URL: 'https://api.deepseek.com/anthropic',
+      ANTHROPIC_AUTH_TOKEN: 'sk-test',
+    }),
+  );
+
+  const result = spawnSync(
+    process.execPath,
+    [
+      cliPath,
+      'import-context',
+      'deepseek',
+      '--all',
+      '--exclude',
+      'settings-safe, commands',
+      '--include-risky',
+      'mcp, plugins',
+      '--force',
+      '--sanitize-history',
+      '--dry-run',
+    ],
+    {
+      env: { ...process.env, CC_USE_DIR: localCcUseDir, HOME: home, USERPROFILE: home },
+      encoding: 'utf8',
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /projects/);
+  assert.match(result.stdout, /mcp/);
+  assert.match(result.stdout, /plugins/);
+  assert.doesNotMatch(result.stdout, /settings-safe/);
 });
 
 // --- remove command ---
@@ -545,6 +676,43 @@ test('cc-use no-arg with no profiles in non-TTY errors', () => {
   assert.match(result.stderr, /no default profile set/);
 });
 
+test('cc-use default launch reports broken configured default clearly', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-broken-default-');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ default: 'missing-profile' }));
+
+  const result = run([], { CC_USE_DIR: dir });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /default profile 'missing-profile' not found/);
+});
+
+test('cc-use default launch reports broken CC_USE_DEFAULT clearly', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-broken-env-default-');
+  mkdirSync(dir, { recursive: true });
+
+  const result = run([], { CC_USE_DIR: dir, CC_USE_DEFAULT: 'missing-env-profile' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /CC_USE_DEFAULT points to 'missing-env-profile'/);
+});
+
+test('cc-use default launch rejects unfinished default profile in non-TTY', () => {
+  const dir = isolatedCcUseDir('cc-use-cli-placeholder-default-');
+  const providersDir = join(dir, 'providers');
+  mkdirSync(providersDir, { recursive: true });
+  writeFileSync(
+    join(providersDir, 'unfinished.json'),
+    JSON.stringify({
+      ANTHROPIC_BASE_URL: 'https://api.example.com',
+      ANTHROPIC_AUTH_TOKEN: '<API_KEY>',
+    }),
+  );
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ default: 'unfinished' }));
+
+  const result = run([], { CC_USE_DIR: dir });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /default profile 'unfinished' has unfilled placeholders/);
+});
+
 
 // --- v0.5 with-first semantics ---
 
@@ -741,4 +909,203 @@ test('cc-use isolate auto -- strips separator and passes args through', { skip: 
   assert.ok(!result.stdout.includes('ARG:--'), '`--` separator should be stripped, not passed to claude');
   assert.ok(result.stdout.includes('ARG:-p'));
   assert.ok(result.stdout.includes('ARG:review this'));
+});
+
+// v0.6 launch-time auto-sync tests
+
+test('cc-use isolate <profile> auto-syncs safe native context', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-isolate-sync');
+  const nativeDir = join(home, '.claude');
+  const projectDir = join(nativeDir, 'projects', 'my-project');
+  mkdirSync(projectDir, { recursive: true });
+  writeFileSync(join(projectDir, 'session.jsonl'), '{"type":"user"}\n');
+  writeFileSync(join(nativeDir, 'settings.json'), JSON.stringify({ theme: 'dark', effortLevel: 'high' }));
+  mkdirSync(join(nativeDir, 'agents'), { recursive: true });
+  writeFileSync(join(nativeDir, 'agents', 'agent.json'), '{"name":"test"}');
+
+  setupProfile('iso-sync');
+  const result = run(['isolate', 'iso-sync'], { HOME: home });
+  assert.equal(result.status, 0, result.stderr);
+
+  const targetDir = join(ccUseDir, 'sessions', 'iso-sync');
+  assert.equal(existsSync(join(targetDir, 'projects', 'my-project', 'session.jsonl')), true);
+  assert.equal(existsSync(join(targetDir, 'settings.json')), true);
+  assert.equal(existsSync(join(targetDir, 'agents', 'agent.json')), true);
+
+  rmSync(targetDir, { recursive: true, force: true });
+});
+
+test('cc-use isolate auto-sync filters settings-safe fields', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-isolate-settings');
+  const nativeDir = join(home, '.claude');
+  mkdirSync(nativeDir, { recursive: true });
+  writeFileSync(
+    join(nativeDir, 'settings.json'),
+    JSON.stringify({ theme: 'dark', env: { SECRET: 'x' }, hooks: { pre: 'cmd' } }),
+  );
+
+  setupProfile('iso-settings');
+  const result = run(['isolate', 'iso-settings'], { HOME: home });
+  assert.equal(result.status, 0, result.stderr);
+
+  const targetDir = join(ccUseDir, 'sessions', 'iso-settings');
+  const settings = JSON.parse(readFileSync(join(targetDir, 'settings.json'), 'utf8')) as Record<string, unknown>;
+  assert.equal(settings.theme, 'dark');
+  assert.equal('env' in settings, false);
+  assert.equal('hooks' in settings, false);
+
+  rmSync(targetDir, { recursive: true, force: true });
+});
+
+test('cc-use isolate auto-sync skips existing targets without overwriting', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-isolate-skip');
+  const nativeDir = join(home, '.claude');
+  const projectDir = join(nativeDir, 'projects', 'my-project');
+  mkdirSync(projectDir, { recursive: true });
+  writeFileSync(join(projectDir, 'session.jsonl'), '{"type":"user","content":"native"}\n');
+
+  setupProfile('iso-skip');
+
+  // Pre-create target with different content
+  const targetDir = join(ccUseDir, 'sessions', 'iso-skip');
+  const targetProjectDir = join(targetDir, 'projects', 'my-project');
+  mkdirSync(targetProjectDir, { recursive: true });
+  writeFileSync(join(targetProjectDir, 'session.jsonl'), '{"type":"user","content":"existing"}\n');
+
+  const result = run(['isolate', 'iso-skip'], { HOME: home });
+  assert.equal(result.status, 0, result.stderr);
+
+  const content = readFileSync(join(targetProjectDir, 'session.jsonl'), 'utf8');
+  assert.match(content, /existing/);
+
+  rmSync(targetDir, { recursive: true, force: true });
+});
+
+test('cc-use isolate auto-sync does not overwrite sanitized history', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-isolate-sanitize');
+  const nativeDir = join(home, '.claude');
+  const projectDir = join(nativeDir, 'projects', 'my-project');
+  mkdirSync(projectDir, { recursive: true });
+  writeFileSync(
+    join(projectDir, 'session.jsonl'),
+    JSON.stringify({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'thinking', thinking: 'secret' }],
+      },
+    }) + '\n',
+  );
+
+  setupProfile('iso-sanitize');
+
+  // Manually sanitize import first
+  const result1 = run(
+    ['import-context', 'iso-sanitize', '--include', 'projects', '--sanitize-history', '--force'],
+    { HOME: home },
+  );
+  assert.equal(result1.status, 0, result1.stderr);
+
+  const targetDir = join(ccUseDir, 'sessions', 'iso-sanitize');
+  const targetProjectDir = join(targetDir, 'projects', 'my-project');
+  const sanitized = readFileSync(join(targetProjectDir, 'session.jsonl'), 'utf8');
+  assert.doesNotMatch(sanitized, /"type":"thinking"/);
+
+  // Now run isolate — auto-sync should NOT overwrite with raw
+  const result2 = run(['isolate', 'iso-sanitize'], { HOME: home });
+  assert.equal(result2.status, 0, result2.stderr);
+
+  const afterIsolate = readFileSync(join(targetProjectDir, 'session.jsonl'), 'utf8');
+  assert.doesNotMatch(afterIsolate, /"type":"thinking"/);
+
+  rmSync(targetDir, { recursive: true, force: true });
+});
+
+test('cc-use isolate auto-syncs default profile', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-isolate-default');
+  const nativeDir = join(home, '.claude');
+  mkdirSync(nativeDir, { recursive: true });
+  writeFileSync(join(nativeDir, 'settings.json'), JSON.stringify({ theme: 'light' }));
+
+  setupProfile('iso-default');
+  setDefault('iso-default');
+
+  const result = run(['isolate'], { HOME: home });
+  assert.equal(result.status, 0, result.stderr);
+
+  const targetDir = join(ccUseDir, 'sessions', 'iso-default');
+  const settings = JSON.parse(readFileSync(join(targetDir, 'settings.json'), 'utf8')) as Record<string, unknown>;
+  assert.equal(settings.theme, 'light');
+
+  rmSync(targetDir, { recursive: true, force: true });
+});
+
+test('cc-use with does not auto-sync to session dir', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-with-no-sync');
+  const nativeDir = join(home, '.claude');
+  mkdirSync(nativeDir, { recursive: true });
+  writeFileSync(join(nativeDir, 'settings.json'), JSON.stringify({ theme: 'dark' }));
+
+  setupProfile('with-no-sync');
+  const result = run(['with', 'with-no-sync'], { HOME: home });
+  assert.equal(result.status, 0, result.stderr);
+
+  const targetDir = join(ccUseDir, 'sessions', 'with-no-sync');
+  assert.equal(existsSync(join(targetDir, 'settings.json')), false);
+});
+
+test('cc-use isolate auto syncs selected profile', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-isolate-auto-sync');
+  const nativeDir = join(home, '.claude');
+  mkdirSync(nativeDir, { recursive: true });
+  writeFileSync(join(nativeDir, 'settings.json'), JSON.stringify({ theme: 'auto' }));
+
+  setupProfile('iso-auto-sync');
+  writeFileSync(
+    join(ccUseDir, 'config.json'),
+    JSON.stringify({
+      default: 'iso-auto-sync',
+      auto: {
+        fallbackOrder: [],
+        profiles: {
+          'iso-auto-sync': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['isolate', 'auto'], { HOME: home });
+  assert.equal(result.status, 0, result.stderr);
+
+  const targetDir = join(ccUseDir, 'sessions', 'iso-auto-sync');
+  const settings = JSON.parse(readFileSync(join(targetDir, 'settings.json'), 'utf8')) as Record<string, unknown>;
+  assert.equal(settings.theme, 'auto');
+
+  rmSync(targetDir, { recursive: true, force: true });
+});
+
+test('cc-use isolate auto-sync does not copy risky categories', { skip: posixOnly }, () => {
+  const home = join(tmp, 'home-isolate-no-risky');
+  const nativeDir = join(home, '.claude');
+  mkdirSync(join(nativeDir, 'mcp'), { recursive: true });
+  writeFileSync(join(nativeDir, 'mcp', 'config.json'), '{}');
+  mkdirSync(join(nativeDir, 'hooks'), { recursive: true });
+  writeFileSync(join(nativeDir, 'hooks.json'), '{}');
+  mkdirSync(join(nativeDir, 'plugins'), { recursive: true });
+  writeFileSync(join(nativeDir, 'plugins', 'installed.json'), '{}');
+
+  setupProfile('iso-no-risky');
+  const result = run(['isolate', 'iso-no-risky'], { HOME: home });
+  assert.equal(result.status, 0, result.stderr);
+
+  const targetDir = join(ccUseDir, 'sessions', 'iso-no-risky');
+  assert.equal(existsSync(join(targetDir, 'mcp')), false);
+  assert.equal(existsSync(join(targetDir, 'hooks')), false);
+  assert.equal(existsSync(join(targetDir, 'hooks.json')), false);
+  assert.equal(existsSync(join(targetDir, 'plugins')), false);
+
+  rmSync(targetDir, { recursive: true, force: true });
 });

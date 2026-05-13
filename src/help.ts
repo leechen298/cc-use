@@ -16,6 +16,7 @@ Usage:
   cc-use doctor [profile]             Validate fields + probe endpoint (--all checks every profile, --no-probe skips network)
   cc-use default [profile]            Show or set the default profile
   cc-use import-history [profile]     Copy native Claude history into a profile (--sanitize enables provider-compatible cleanup)
+  cc-use import-context [profile]     Copy selected native Claude context into an isolated profile session (--dry-run, --all, --include, --exclude, --include-risky, --force, --sanitize-history)
   cc-use --version | -v               Print version
   cc-use --help    | -h               Show this help
 

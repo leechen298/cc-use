@@ -13,6 +13,7 @@ const fs = await import('node:fs');
 fs.mkdirSync(providersDir, { recursive: true });
 
 const profileMod = await import('../src/profile.js');
+const templatesMod = await import('../src/templates.js');
 
 test.after(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -80,5 +81,25 @@ test('findPlaceholders flags unfilled required fields', () => {
       ANTHROPIC_AUTH_TOKEN: 'sk-real',
     }),
     [],
+  );
+});
+
+test('listTemplates returns shipped templates in sorted order', () => {
+  const templates = templatesMod.listTemplates();
+  assert.ok(templates.includes('deepseek'));
+  assert.ok(templates.includes('custom'));
+  assert.deepEqual(templates, [...templates].sort());
+});
+
+test('loadTemplate reads defaults and reports missing templates clearly', () => {
+  const tpl = templatesMod.loadTemplate('deepseek');
+  assert.equal(tpl.name, 'deepseek');
+  assert.match(tpl.description, /DeepSeek/);
+  assert.equal(tpl.defaults.ANTHROPIC_BASE_URL, 'https://api.deepseek.com/anthropic');
+  assert.equal(tpl.defaults.ANTHROPIC_MODEL, 'deepseek-v4-pro');
+
+  assert.throws(
+    () => templatesMod.loadTemplate('missing-template'),
+    /template 'missing-template' not found\. Available:/,
   );
 });

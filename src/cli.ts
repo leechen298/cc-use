@@ -15,6 +15,7 @@ import { getDefaultProfile, setDefaultProfile } from './config.js';
 import { runInit } from './init.js';
 import { runDoctor, runDoctorAll } from './doctor.js';
 import { runImportHistory } from './importHistory.js';
+import { runImportContext, syncProfileContext } from './importContext.js';
 import { runRemove } from './remove.js';
 import { selectAutoProfile } from './auto.js';
 import { runStatus } from './status.js';
@@ -78,6 +79,8 @@ async function main(): Promise<void> {
       return;
     case 'import-history':
       process.exit(await runImportHistory(parseImportArgs(rest)));
+    case 'import-context':
+      process.exit(await runImportContext(parseImportContextArgs(rest)));
     case 'remove':
       process.exit(await runRemove(parseRemoveArgs(rest)));
     case 'status':
@@ -167,6 +170,9 @@ async function launchAuto(passThroughArgs: string[], sharedContext: boolean): Pr
   if (typeof selected === 'number') return selected;
   const resolved = await resolveLaunchProfile(selected);
   if (typeof resolved === 'number') return resolved;
+  if (!sharedContext) {
+    await syncProfileContext(resolved.name);
+  }
   return spawnClaude(resolved, passThroughArgs, {
     claudeConfigDir: sharedContext ? NATIVE_CLAUDE_DIR : sessionDirFor(resolved.name),
   });
@@ -190,6 +196,7 @@ async function launchIsolated(args: string[]): Promise<number> {
 
   const resolved = await resolveLaunchProfile(head);
   if (typeof resolved === 'number') return resolved;
+  await syncProfileContext(resolved.name);
   return spawnClaude(resolved, rest, { claudeConfigDir: sessionDirFor(resolved.name) });
 }
 
@@ -259,11 +266,17 @@ async function launchDefault(
     const initCode = await runInit({ template: def, name: def, force: true });
     if (initCode !== 0) return initCode;
     const updated = loadProfile(def);
+    if (opts.isolated) {
+      await syncProfileContext(def);
+    }
     return spawnClaude(updated, passThroughArgs, {
       claudeConfigDir: opts.isolated ? sessionDirFor(def) : NATIVE_CLAUDE_DIR,
     });
   }
 
+  if (opts.isolated) {
+    await syncProfileContext(def);
+  }
   return spawnClaude(profile, passThroughArgs, {
     claudeConfigDir: opts.isolated ? sessionDirFor(def) : NATIVE_CLAUDE_DIR,
   });
@@ -301,6 +314,9 @@ async function chooseDefaultOrInit(
   const chosen = profiles[idx]!.name;
   setDefaultProfile(chosen);
   process.stdout.write(`cc-use: default profile set to '${chosen}'.\n`);
+  if (opts?.isolated) {
+    await syncProfileContext(chosen);
+  }
   const code = await spawnClaude(loadProfile(chosen), passThroughArgs, {
     claudeConfigDir: opts?.isolated ? sessionDirFor(chosen) : NATIVE_CLAUDE_DIR,
   });
@@ -486,4 +502,106 @@ function parseImportArgs(args: string[]): { profile: string; all: boolean; sanit
     }
   }
   return { profile, all, sanitize };
+}
+
+function parseImportContextArgs(args: string[]): {
+  profile: string;
+  dryRun: boolean;
+  force: boolean;
+  include: import('./importContext.js').SafeCategory[];
+  exclude: import('./importContext.js').SafeCategory[];
+  includeRisky: import('./importContext.js').RiskyCategory[];
+  all: boolean;
+  sanitizeHistory: boolean;
+} {
+  let profile: string | undefined;
+  let dryRun = false;
+  let force = false;
+  let all = false;
+  let sanitizeHistory = false;
+  const include: string[] = [];
+  const exclude: string[] = [];
+  const includeRisky: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]!;
+    switch (a) {
+      case '--dry-run':
+        dryRun = true;
+        break;
+      case '--force':
+      case '-f':
+        force = true;
+        break;
+      case '--all':
+        all = true;
+        break;
+      case '--sanitize-history':
+        sanitizeHistory = true;
+        break;
+      case '--include': {
+        const val = args[++i];
+        if (!val) {
+          process.stderr.write(`cc-use import-context: --include requires a value.\n`);
+          process.exit(1);
+        }
+        for (const c of val.split(',').map((s) => s.trim()).filter(Boolean)) {
+          include.push(c);
+        }
+        break;
+      }
+      case '--exclude': {
+        const val = args[++i];
+        if (!val) {
+          process.stderr.write(`cc-use import-context: --exclude requires a value.\n`);
+          process.exit(1);
+        }
+        for (const c of val.split(',').map((s) => s.trim()).filter(Boolean)) {
+          exclude.push(c);
+        }
+        break;
+      }
+      case '--include-risky': {
+        const val = args[++i];
+        if (!val) {
+          process.stderr.write(`cc-use import-context: --include-risky requires a value.\n`);
+          process.exit(1);
+        }
+        for (const c of val.split(',').map((s) => s.trim()).filter(Boolean)) {
+          includeRisky.push(c);
+        }
+        break;
+      }
+      default:
+        if (a.startsWith('-')) {
+          process.stderr.write(`cc-use import-context: unknown flag '${a}'\n`);
+          process.exit(1);
+        }
+        if (!profile) {
+          profile = a;
+        } else {
+          process.stderr.write(`cc-use import-context: unexpected argument '${a}'\n`);
+          process.exit(1);
+        }
+    }
+  }
+
+  if (!profile) {
+    profile = getDefaultProfile();
+    if (!profile) {
+      process.stderr.write(`cc-use import-context: profile name required (no default set).\n`);
+      process.exit(1);
+    }
+  }
+
+  return {
+    profile,
+    dryRun,
+    force,
+    include: include as import('./importContext.js').SafeCategory[],
+    exclude: exclude as import('./importContext.js').SafeCategory[],
+    includeRisky: includeRisky as import('./importContext.js').RiskyCategory[],
+    all,
+    sanitizeHistory,
+  };
 }

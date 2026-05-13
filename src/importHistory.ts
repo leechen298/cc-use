@@ -99,7 +99,7 @@ function copyDir(src: string, dst: string, sanitize: boolean): { copiedFiles: nu
   return { copiedFiles, sanitizedFiles };
 }
 
-function sanitizeTranscriptFile(path: string): boolean {
+export function sanitizeTranscriptFile(path: string): boolean {
   const rows = readFileSync(path, 'utf8')
     .split('\n')
     .filter((line) => line.length > 0)

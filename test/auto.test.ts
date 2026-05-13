@@ -12,6 +12,7 @@ const configPath = join(tmp, 'config.json');
 const statusPath = join(tmp, 'status.json');
 
 const autoMod = await import('../src/auto.js');
+const configMod = await import('../src/config.js');
 
 test.after(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -197,4 +198,81 @@ test('selectAutoProfile handles empty candidates and fresh cache hits', async ()
     }),
   );
   assert.equal(await autoMod.selectAutoProfile(), 'cached');
+});
+
+test('config default profile honors env override and ignores malformed config', () => {
+  resetState();
+  writeConfig({ default: 'from-config' });
+  assert.equal(configMod.getConfiguredDefaultProfile(), 'from-config');
+  assert.equal(configMod.getDefaultProfile(), 'from-config');
+
+  const originalDefault = process.env.CC_USE_DEFAULT;
+  process.env.CC_USE_DEFAULT = '  from-env  ';
+  try {
+    assert.equal(configMod.getDefaultProfile(), 'from-env');
+    assert.equal(configMod.getConfiguredDefaultProfile(), 'from-config');
+  } finally {
+    if (originalDefault === undefined) delete process.env.CC_USE_DEFAULT;
+    else process.env.CC_USE_DEFAULT = originalDefault;
+  }
+
+  writeFileSync(configPath, '{bad json');
+  assert.equal(configMod.getDefaultProfile(), undefined);
+  assert.deepEqual(configMod.getAutoConfig(), {
+    cacheTtlSeconds: 60,
+    fallbackOrder: [],
+    profiles: {},
+  });
+});
+
+test('getAutoConfig parses valid fields and filters invalid values', () => {
+  resetState();
+  writeConfig({
+    auto: {
+      cacheTtlSeconds: 15,
+      fallbackOrder: ['deepseek', '', 42, 'kimi'],
+      profiles: {
+        deepseek: {
+          mode: 'payg',
+          minBalance: 3.5,
+          check: { kind: 'api', adapter: 'balance-adapter' },
+          recordUsage: true,
+        },
+        kimi: {
+          mode: 'token_plan',
+          check: { kind: 'probe' },
+        },
+        manual: {
+          minBalance: Number.NaN,
+          check: { kind: 'manual_availability', available: false },
+        },
+        ignored: null,
+        invalidCheck: {
+          check: { kind: 'api', adapter: '' },
+          recordUsage: 'yes',
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(configMod.getAutoConfig(), {
+    cacheTtlSeconds: 15,
+    fallbackOrder: ['deepseek', 'kimi'],
+    profiles: {
+      deepseek: {
+        mode: 'payg',
+        minBalance: 3.5,
+        check: { kind: 'api', adapter: 'balance-adapter' },
+        recordUsage: true,
+      },
+      kimi: {
+        mode: 'token_plan',
+        check: { kind: 'probe' },
+      },
+      manual: {
+        check: { kind: 'manual_availability', available: false },
+      },
+      invalidCheck: {},
+    },
+  });
 });
