@@ -4,9 +4,9 @@ Usage:
   cc-use                              Launch with the default profile (shared context; or wizard if none)
   cc-use <profile> [claude args...]   Launch using <profile> (shared context); extra args pass to claude
   cc-use auto [claude args...]        Auto-select a usable profile, then launch shared context
-  cc-use with <profile> [claude args...]  Explicit shared-context launch using <profile>
+  cc-use with [profile] [claude args...]  Explicit shared-context launch (default profile if omitted)
   cc-use with auto [claude args...]   Compatibility alias for shared auto
-  cc-use isolate <profile> [claude args...]  Launch using <profile> with explicit isolated session
+  cc-use isolate [profile] [claude args...]  Explicit isolated launch (default profile if omitted)
   cc-use isolate auto [claude args...]  Auto-select a usable profile, then launch isolated
   cc-use [-flag args...]              Launch with default + pass args to claude
   cc-use init [template]              Interactive setup; defaults to picker

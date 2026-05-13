@@ -83,7 +83,7 @@ async function main(): Promise<void> {
     case 'status':
       process.exit(runStatus());
     case 'auto':
-      process.exit(await launchAuto(rest, true));
+      process.exit(await launchAuto(stripLeadingDoubleDash(rest), true));
     case 'with':
       process.exit(await launchWithProfile(rest));
     case 'isolate':
@@ -156,7 +156,7 @@ async function launchWithProfile(args: string[]): Promise<number> {
   }
 
   if (head === 'auto') {
-    return await launchAuto(rest, true);
+    return await launchAuto(stripLeadingDoubleDash(rest), true);
   }
 
   return await launchByName(head, rest);
@@ -185,12 +185,16 @@ async function launchIsolated(args: string[]): Promise<number> {
   }
 
   if (head === 'auto') {
-    return await launchAuto(rest, false);
+    return await launchAuto(stripLeadingDoubleDash(rest), false);
   }
 
   const resolved = await resolveLaunchProfile(head);
   if (typeof resolved === 'number') return resolved;
   return spawnClaude(resolved, rest, { claudeConfigDir: sessionDirFor(resolved.name) });
+}
+
+function stripLeadingDoubleDash(args: string[]): string[] {
+  return args[0] === '--' ? args.slice(1) : args;
 }
 
 async function launchDefault(

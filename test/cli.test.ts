@@ -107,8 +107,8 @@ test('isolate is a reserved subcommand name', () => {
   assert.equal(isReserved('isolate'), true);
 });
 
-test('help text includes cc-use with <profile>', () => {
-  assert.match(USAGE, /cc-use with <profile>/);
+test('help text includes cc-use with [profile]', () => {
+  assert.match(USAGE, /cc-use with \[profile\]/);
 });
 
 test('cc-use isolate no default profile errors in non-TTY', () => {
@@ -130,13 +130,13 @@ test('cc-use isolate <profile> sets CLAUDE_CONFIG_DIR to session dir', { skip: p
 test('--help stdout includes isolate subcommand usage', () => {
   const result = run(['--help']);
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /cc-use isolate <profile>/);
+  assert.match(result.stdout, /cc-use isolate \[profile\]/);
 });
 
 test('--help stdout includes with subcommand usage', () => {
   const result = run(['--help']);
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /cc-use with <profile>/);
+  assert.match(result.stdout, /cc-use with \[profile\]/);
 });
 
 // --- remove command ---
@@ -569,4 +569,86 @@ test('cc-use isolate auto selects usable profile in isolated mode', { skip: posi
   assert.equal(result.status, 0, result.stderr);
   assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'iso-auto')}\n`));
   assert.match(result.stderr, /selected 'iso-auto' \(manual_available\)/);
+});
+
+
+test('cc-use auto -- strips separator and passes args through', { skip: posixOnly }, () => {
+  setupProfile('auto-dash');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'auto-dash',
+      auto: {
+        fallbackOrder: [],
+        profiles: {
+          'auto-dash': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['auto', '--', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+  assert.ok(!result.stdout.includes('ARG:--'), '`--` separator should be stripped, not passed to claude');
+  assert.ok(result.stdout.includes('ARG:-p'));
+  assert.ok(result.stdout.includes('ARG:review this'));
+});
+
+test('cc-use with auto -- strips separator and passes args through', { skip: posixOnly }, () => {
+  setupProfile('auto-with-dash');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'auto-with-dash',
+      auto: {
+        fallbackOrder: [],
+        profiles: {
+          'auto-with-dash': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['with', 'auto', '--', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+  assert.ok(!result.stdout.includes('ARG:--'), '`--` separator should be stripped, not passed to claude');
+  assert.ok(result.stdout.includes('ARG:-p'));
+  assert.ok(result.stdout.includes('ARG:review this'));
+});
+
+test('cc-use isolate auto -- strips separator and passes args through', { skip: posixOnly }, () => {
+  setupProfile('auto-iso-dash');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'auto-iso-dash',
+      auto: {
+        fallbackOrder: [],
+        profiles: {
+          'auto-iso-dash': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['isolate', 'auto', '--', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'auto-iso-dash')}\n`));
+  assert.ok(!result.stdout.includes('ARG:--'), '`--` separator should be stripped, not passed to claude');
+  assert.ok(result.stdout.includes('ARG:-p'));
+  assert.ok(result.stdout.includes('ARG:review this'));
 });
