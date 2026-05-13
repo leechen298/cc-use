@@ -4,6 +4,32 @@ This file tracks user-visible product iterations at a higher level than git comm
 
 Detailed release notes live under [`docs/releases/`](./releases/README.md).
 
+## 0.5.0
+
+Release-note source: [`docs/releases/0.5.0.md`](./releases/0.5.0.md)
+
+### Changed
+
+- Default launch semantics are now with-first:
+  - `cc-use` launches the default profile with native `~/.claude/`
+  - `cc-use <profile>` launches the named profile with native `~/.claude/`
+  - `cc-use auto` selects a usable profile and launches with native `~/.claude/`
+- `cc-use with` now resolves the configured default profile instead of requiring an explicit profile name.
+- `cc-use isolate` now resolves the configured default profile and keeps explicit isolated mode available.
+- `cc-use isolate auto` runs auto routing and launches the selected profile isolated.
+
+### Compatibility
+
+- `cc-use with auto` remains a compatibility alias for shared auto routing.
+- Users who want the old bare-profile isolated behavior should use `cc-use isolate <profile>`.
+- Existing isolated session directories under `~/.cc-use/sessions/<profile>/` are preserved.
+- No session migration or automatic history import is performed.
+
+### Documentation
+
+- README, README.zh-CN, package metadata, help text, current behavior docs, and release notes now describe the with-first default.
+- The v0.5 technical design is tracked in [`docs/specs/v0.5/README.md`](./specs/v0.5/README.md).
+
 ## 0.4.0
 
 Release-note source: [`docs/releases/0.4.0.md`](./releases/0.4.0.md)

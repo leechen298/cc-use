@@ -1,93 +1,102 @@
 # Current Behavior
 
-This document describes the current shipped behavior of `cc-use`.  
-Use this file as the source of truth for current CLI semantics. Historical design notes for the original `v0.1` phase live under `docs/specs/v0.1/`.
+This document describes the current shipped behavior of `cc-use`.
+Use this file as the source of truth for current CLI semantics. Historical design notes live under `docs/specs/`.
 
 ## Command modes
 
+### `cc-use [claude args...]`
+
+Default-profile shared launch.
+
+- Resolves the configured default profile
+- Uses native `~/.claude/` as `CLAUDE_CONFIG_DIR`
+- Preserves Claude Code history, skills, projects, and settings
+- A first argument starting with `-` is passed through to `claude`
+- `--` explicitly separates cc-use parsing from Claude args
+
+Typical use:
+
+```bash
+cc-use
+cc-use -p "review this diff"
+cc-use -- -p "review this diff"
+```
+
+### `cc-use <profile> [claude args...]`
+
+Named-profile shared launch.
+
+- Reuses native `~/.claude/` as `CLAUDE_CONFIG_DIR`
+- Swaps the backend provider for the current launch through the selected profile env
+- Extra args after the profile name pass through to `claude`
+
+Typical use:
+
+```bash
+cc-use deepseek
+cc-use deepseek -p "review this diff"
+```
+
 ### `cc-use auto [claude args...]`
 
-Automatic isolated launch.
+Automatic shared launch.
 
 - Selects the first usable configured profile before launching Claude Code
 - Uses the configured default profile first, then deduped `auto.fallbackOrder`
 - Reuses fresh successful usability cache entries within TTL
 - Rechecks stale, missing, unknown, or unusable entries before skipping
-- Uses `~/.cc-use/sessions/<selected-profile>/` as `CLAUDE_CONFIG_DIR`
+- Uses native `~/.claude/` as `CLAUDE_CONFIG_DIR`
+- Supports `--` as an explicit pass-through separator
 
 Typical use:
 
 ```bash
 cc-use auto
 cc-use auto -p "review this diff"
+cc-use auto -- -p "review this diff"
 ```
 
-### `cc-use with auto [claude args...]`
+### `cc-use with [profile] [claude args...]`
 
-Automatic shared-context launch.
+Explicit shared-context launch.
 
-- Uses the same auto profile selection path as `cc-use auto`
+- With a profile, launches that named profile in shared mode
+- Without a profile, resolves the configured default profile
 - Reuses native `~/.claude/` as `CLAUDE_CONFIG_DIR`
-- Keeps `with` mode explicit; auto routing does not change default launch semantics
+- `cc-use with auto` remains a compatibility alias for shared auto routing
+- Supports `--` as an explicit pass-through separator
 
 Typical use:
 
 ```bash
-cc-use with auto
-```
-
-### `cc-use with <profile> [claude args...]`
-
-Recommended daily-use mode.
-
-- Reuses native `~/.claude/` as `CLAUDE_CONFIG_DIR`
-- Keeps existing Claude Code history, skills, projects, and other local context
-- Swaps the backend provider for the current launch through the selected profile env
-
-Typical use:
-
-```bash
+cc-use with
 cc-use with deepseek
-cc-use with mimo
+cc-use with auto
+cc-use with -- -p "review this diff"
+cc-use with auto -- -p "review this diff"
 ```
 
-### `cc-use isolate <profile> [claude args...]`
+### `cc-use isolate [profile] [claude args...]`
 
 Explicit isolated mode.
 
+- With a profile, launches that named profile in isolated mode
+- Without a profile, resolves the configured default profile
 - Uses `~/.cc-use/sessions/<profile>/` as `CLAUDE_CONFIG_DIR`
 - Keeps the provider session separate from native Claude Code
-- Useful for experiments, comparisons, and compatibility debugging
+- `cc-use isolate auto` runs auto routing and launches the selected profile isolated
+- Supports `--` as an explicit pass-through separator
 
 Typical use:
 
 ```bash
+cc-use isolate
 cc-use isolate deepseek
-cc-use isolate mimo
+cc-use isolate auto
+cc-use isolate -- -p "review this diff"
+cc-use isolate auto -- -p "review this diff"
 ```
-
-### `cc-use <profile> [claude args...]`
-
-Compatible shorthand for isolated mode.
-
-- Current behavior is equivalent to `cc-use isolate <profile>`
-- Uses `~/.cc-use/sessions/<profile>/`
-- Kept for backward compatibility and simple profile-centric workflows
-
-Typical use:
-
-```bash
-cc-use deepseek
-cc-use mimo
-```
-
-### `cc-use`
-
-Launches with the default profile.
-
-- If no default profile is configured and stdin is a TTY, enters the init flow
-- If a default profile is configured, the current behavior is isolated mode
-- Equivalent runtime behavior to `cc-use <default-profile>`
 
 ### `cc-use status`
 
@@ -112,16 +121,16 @@ Default-profile config lives under:
 ~/.cc-use/config.json
 ```
 
-Isolated session data lives under:
-
-```text
-~/.cc-use/sessions/<name>/
-```
-
 Native shared-context mode uses:
 
 ```text
 ~/.claude/
+```
+
+Explicit isolated session data lives under:
+
+```text
+~/.cc-use/sessions/<name>/
 ```
 
 Auto-routing metadata lives in:
@@ -178,7 +187,10 @@ Auto routing does not:
 - switch providers mid-run
 - score provider or model quality
 - infer token-plan quota
-- change `cc-use <profile>` into shared mode
+- choose by task difficulty
+- execute external worker mode
+
+The checker can explain usability in detail. The router selects only the first profile where `usable === true`.
 
 ## History import
 
@@ -213,19 +225,27 @@ Current built-in templates include:
 
 ## Recommended usage
 
-Use `with` when:
+Use the shared default mode when:
 
 - You already use Claude Code daily
 - You want to preserve native history, skills, and projects
 - You want to swap providers without rebuilding your local setup
+
+Prefer:
+
+```bash
+cc-use deepseek
+cc-use auto
+```
+
+Use explicit `with` spelling when:
+
+- You want to make shared-context intent visible in scripts or docs
+- You want the compatibility spelling for `cc-use with auto`
 
 Use `isolate` when:
 
 - You want a clean provider-specific workspace
 - You want to compare providers without mixing history
 - You are debugging compatibility or import behavior
-
-Use bare `cc-use <profile>` when:
-
-- You want the legacy isolated behavior
-- You prefer the shortest command and understand it is isolated mode
+- You want the old per-profile `CLAUDE_CONFIG_DIR` behavior
