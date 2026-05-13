@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/cc-use.svg)](https://www.npmjs.com/package/cc-use)
 
-用 DeepSeek、Kimi、Qwen、GLM、MiniMax、火山方舟、BytePlus ModelArk、OpenRouter 等第三方 Anthropic 兼容服务启动 Claude Code —— 国内厂商和它们的国际站都覆盖。`cc-use with` 可复用原生 `~/.claude/` 上下文；`cc-use isolate` 用于显式隔离会话。
+用 DeepSeek、Kimi、Qwen、GLM、MiniMax、火山方舟、BytePlus ModelArk、OpenRouter 等第三方 Anthropic 兼容服务启动 Claude Code —— 国内厂商和它们的国际站都覆盖。默认复用原生 `~/.claude/` 上下文；`cc-use isolate` 用于显式隔离会话。
 
 ![cc-use 演示](docs/assets/demo.gif)
 
@@ -18,13 +18,14 @@ npm install -g cc-use
 
 ```bash
 cc-use init                       # 交互式：选模板、输入 API Key
-cc-use with deepseek              # 用 DeepSeek 启动，复用原生 ~/.claude（推荐日常使用）
-cc-use with auto                  # 自动选择可用 profile，复用原生 ~/.claude
+cc-use deepseek                   # 用 DeepSeek 启动，复用原生 ~/.claude（默认日常使用）
+cc-use auto                       # 自动选择可用 profile，复用原生 ~/.claude
 cc-use deepseek -p "审查 X"       # 一次性查询（profile 后的参数全部透传给 claude）
-cc-use auto -p "审查 X"           # 自动选择可用 profile，使用隔离会话
+cc-use with deepseek              # 显式共享上下文启动 DeepSeek
+cc-use with auto                  # 共享 auto 的兼容别名
 cc-use isolate deepseek           # 用 DeepSeek 启动，显式隔离会话
-cc-use deepseek                   # 用 DeepSeek 启动（隔离会话，兼容简写）
-cc-use                            # 用默认 profile 启动（隔离会话）
+cc-use isolate auto               # 自动选择可用 profile，隔离会话
+cc-use                            # 用默认 profile 启动（共享上下文）
 
 cc-use ls                         # 列已配置的 profile
 cc-use status                     # 查看 auto routing 的最近可用性状态
@@ -39,7 +40,7 @@ cc-use --help                     # 完整命令参考
 
 `import-history` 默认原样拷贝历史。DeepSeek 或其他 provider 无法恢复 Claude thinking / 工具调用历史时，追加 `--sanitize`；它会保留可读文本，删除 Claude thinking 块，并把历史工具调用 / 媒体 / 工具结果块转成普通文本标记后再写入 `~/.cc-use/sessions/<profile>/`。
 
-profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。`cc-use with <profile>` 为推荐日常用法 —— 复用原生 `~/.claude/` 上下文（聊天记录、skills、projects）。`cc-use isolate <profile>`（或简写 `cc-use <profile>`）使用独立的 `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`。
+profile 配置存在 `~/.cc-use/providers/<name>.json`（chmod 600）。`cc-use <profile>` 为推荐日常用法 —— 复用原生 `~/.claude/` 上下文（聊天记录、skills、projects）。`cc-use isolate <profile>` 使用独立的 `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`。
 
 ## 自动路由
 

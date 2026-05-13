@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
   if (argv.length === 0) {
-    return await launchWithDefault([]);
+    process.exit(await launchDefault([], { prefix: 'cc-use', isolated: false }));
   }
 
   const head = argv[0]!;
@@ -49,14 +49,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  // First arg starts with '-' → treat full argv as claude args, use default
-  if (head.startsWith('-')) {
-    return await launchWithDefault(argv);
-  }
-
   // '--' explicit pass-through
   if (head === '--') {
-    return await launchWithDefault(rest);
+    process.exit(await launchDefault(rest, { prefix: 'cc-use', isolated: false }));
+  }
+
+  // First arg starts with '-' → treat full argv as claude args, use default
+  if (head.startsWith('-')) {
+    process.exit(await launchDefault(argv, { prefix: 'cc-use', isolated: false }));
   }
 
   switch (head) {
@@ -83,7 +83,7 @@ async function main(): Promise<void> {
     case 'status':
       process.exit(runStatus());
     case 'auto':
-      process.exit(await launchAuto(rest, false));
+      process.exit(await launchAuto(rest, true));
     case 'with':
       process.exit(await launchWithProfile(rest));
     case 'isolate':
@@ -140,22 +140,26 @@ async function resolveLaunchProfile(name: string): Promise<Profile | number> {
 async function launchByName(name: string, passThroughArgs: string[]): Promise<number> {
   const resolved = await resolveLaunchProfile(name);
   if (typeof resolved === 'number') return resolved;
-  return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: sessionDirFor(resolved.name) });
+  return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: NATIVE_CLAUDE_DIR });
 }
 
 async function launchWithProfile(args: string[]): Promise<number> {
-  const name = args[0];
-  if (!name) {
-    process.stderr.write(`cc-use with: profile name required.\n`);
-    return 1;
+  const head = args[0];
+  const rest = args.slice(1);
+
+  if (head === '--') {
+    return await launchDefault(rest, { prefix: 'cc-use with', isolated: false });
   }
-  const passThroughArgs = args.slice(1);
-  if (name === 'auto') {
-    return await launchAuto(passThroughArgs, true);
+
+  if (!head || head.startsWith('-')) {
+    return await launchDefault(args, { prefix: 'cc-use with', isolated: false });
   }
-  const resolved = await resolveLaunchProfile(name);
-  if (typeof resolved === 'number') return resolved;
-  return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: NATIVE_CLAUDE_DIR });
+
+  if (head === 'auto') {
+    return await launchAuto(rest, true);
+  }
+
+  return await launchByName(head, rest);
 }
 
 async function launchAuto(passThroughArgs: string[], sharedContext: boolean): Promise<number> {
@@ -169,74 +173,102 @@ async function launchAuto(passThroughArgs: string[], sharedContext: boolean): Pr
 }
 
 async function launchIsolated(args: string[]): Promise<number> {
-  const name = args[0];
-  if (!name) {
-    process.stderr.write(`cc-use isolate: profile name required.\n`);
-    return 1;
+  const head = args[0];
+  const rest = args.slice(1);
+
+  if (head === '--') {
+    return await launchDefault(rest, { prefix: 'cc-use isolate', isolated: true });
   }
-  const passThroughArgs = args.slice(1);
-  const resolved = await resolveLaunchProfile(name);
+
+  if (!head || head.startsWith('-')) {
+    return await launchDefault(args, { prefix: 'cc-use isolate', isolated: true });
+  }
+
+  if (head === 'auto') {
+    return await launchAuto(rest, false);
+  }
+
+  const resolved = await resolveLaunchProfile(head);
   if (typeof resolved === 'number') return resolved;
-  return spawnClaude(resolved, passThroughArgs, { claudeConfigDir: sessionDirFor(resolved.name) });
+  return spawnClaude(resolved, rest, { claudeConfigDir: sessionDirFor(resolved.name) });
 }
 
-async function launchWithDefault(passThroughArgs: string[]): Promise<void> {
+async function launchDefault(
+  passThroughArgs: string[],
+  opts: { prefix: string; isolated: boolean },
+): Promise<number> {
   const def = getDefaultProfile();
   if (!def) {
-    await chooseDefaultOrInit(passThroughArgs);
-    return;
+    if (!process.stdin.isTTY) {
+      process.stderr.write(
+        `${opts.prefix}: no default profile set. Run 'cc-use default <profile>' or 'cc-use init'.\n`,
+      );
+      return 1;
+    }
+    await chooseDefaultOrInit(passThroughArgs, { isolated: opts.isolated });
+    return 0; // unreachable; chooseDefaultOrInit exits
   }
+
   if (!profileExists(def)) {
     const fromEnv = !!process.env.CC_USE_DEFAULT;
     if (!process.stdin.isTTY) {
       if (fromEnv) {
         process.stderr.write(
-          `cc-use: CC_USE_DEFAULT points to '${def}' but that profile does not exist. ` +
+          `${opts.prefix}: CC_USE_DEFAULT points to '${def}' but that profile does not exist. ` +
             `Unset CC_USE_DEFAULT or create the profile.\n`,
         );
       } else {
         process.stderr.write(
-          `cc-use: default profile '${def}' not found. Run 'cc-use default <name>' or 'cc-use init'.\n`,
+          `${opts.prefix}: default profile '${def}' not found. Run 'cc-use default <name>' or 'cc-use init'.\n`,
         );
       }
-      process.exit(1);
+      return 1;
     }
     // TTY: handle broken default
     if (fromEnv) {
       process.stderr.write(
-        `cc-use: warning: CC_USE_DEFAULT points to '${def}' but that profile does not exist. ` +
+        `${opts.prefix}: warning: CC_USE_DEFAULT points to '${def}' but that profile does not exist. ` +
           `Unset or update the environment variable.\n`,
       );
     } else {
       setDefaultProfile(undefined);
-      process.stdout.write(`cc-use: configured default '${def}' no longer exists; unset.\n`);
+      process.stdout.write(`${opts.prefix}: configured default '${def}' no longer exists; unset.\n`);
     }
-    await chooseDefaultOrInit(passThroughArgs);
-    return;
+    await chooseDefaultOrInit(passThroughArgs, { isolated: opts.isolated });
+    return 0; // unreachable
   }
+
   const profile = loadProfile(def);
   const missing = findPlaceholders(profile.env);
   if (missing.length > 0) {
     if (!process.stdin.isTTY) {
       process.stderr.write(
-        `cc-use: default profile '${def}' has unfilled placeholders (${missing.join(', ')}).\n` +
+        `${opts.prefix}: default profile '${def}' has unfilled placeholders (${missing.join(', ')}).\n` +
           `        Run 'cc-use init ${def} --force' to reconfigure.\n`,
       );
-      process.exit(1);
+      return 1;
     }
     process.stdout.write(
-      `\ncc-use: default profile '${def}' looks unfinished (placeholder values in ${missing.join(', ')}).\n` +
+      `\n${opts.prefix}: default profile '${def}' looks unfinished (placeholder values in ${missing.join(', ')}).\n` +
         `Reconfiguring now...\n\n`,
     );
     const initCode = await runInit({ template: def, name: def, force: true });
-    if (initCode !== 0) process.exit(initCode);
-    process.exit(await spawnClaude(loadProfile(def), passThroughArgs, { claudeConfigDir: sessionDirFor(def) }));
+    if (initCode !== 0) return initCode;
+    const updated = loadProfile(def);
+    return spawnClaude(updated, passThroughArgs, {
+      claudeConfigDir: opts.isolated ? sessionDirFor(def) : NATIVE_CLAUDE_DIR,
+    });
   }
-  const code = await spawnClaude(profile, passThroughArgs, { claudeConfigDir: sessionDirFor(profile.name) });
-  process.exit(code);
+
+  return spawnClaude(profile, passThroughArgs, {
+    claudeConfigDir: opts.isolated ? sessionDirFor(def) : NATIVE_CLAUDE_DIR,
+  });
 }
 
-async function chooseDefaultOrInit(passThroughArgs: string[]): Promise<void> {
+async function chooseDefaultOrInit(
+  passThroughArgs: string[],
+  opts?: { isolated?: boolean },
+): Promise<void> {
   const profiles = listProfiles();
   if (!process.stdin.isTTY) {
     process.stderr.write(
@@ -266,7 +298,7 @@ async function chooseDefaultOrInit(passThroughArgs: string[]): Promise<void> {
   setDefaultProfile(chosen);
   process.stdout.write(`cc-use: default profile set to '${chosen}'.\n`);
   const code = await spawnClaude(loadProfile(chosen), passThroughArgs, {
-    claudeConfigDir: sessionDirFor(chosen),
+    claudeConfigDir: opts?.isolated ? sessionDirFor(chosen) : NATIVE_CLAUDE_DIR,
   });
   process.exit(code);
 }
@@ -293,7 +325,6 @@ function printLs(): void {
     process.stdout.write(`${marker} ${p.name}\n`);
   }
 }
-
 
 function handleDefault(args: string[]): void {
   if (args.length === 0) {

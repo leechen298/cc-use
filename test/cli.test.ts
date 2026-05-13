@@ -21,7 +21,7 @@ test.after(() => rmSync(tmp, { recursive: true, force: true }));
 const binDir = join(tmp, 'bin');
 mkdirSync(binDir, { recursive: true });
 const fakeClaude = join(binDir, 'claude');
-writeFileSync(fakeClaude, '#!/bin/sh\necho "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"\n');
+writeFileSync(fakeClaude, '#!/bin/sh\necho "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR"\nfor arg in "$@"; do echo "ARG:$arg"; done\n');
 chmodSync(fakeClaude, 0o755);
 
 function setupProfile(name = 'deepseek', env?: Record<string, string>): void {
@@ -38,6 +38,10 @@ function setupProfile(name = 'deepseek', env?: Record<string, string>): void {
   );
 }
 
+function setDefault(name: string): void {
+  writeFileSync(join(ccUseDir, 'config.json'), JSON.stringify({ default: name }));
+}
+
 function run(args: string[], envOverrides?: Record<string, string>) {
   return spawnSync(process.execPath, [cliPath, ...args], {
     encoding: 'utf8',
@@ -51,10 +55,10 @@ function run(args: string[], envOverrides?: Record<string, string>) {
   });
 }
 
-test('cc-use with missing profile name errors', () => {
+test('cc-use with no default profile errors in non-TTY', () => {
   const result = run(['with']);
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /cc-use with: profile name required/);
+  assert.match(result.stderr, /cc-use with: no default profile set/);
 });
 
 test('cc-use with nonexistent profile errors', () => {
@@ -84,14 +88,14 @@ test('cc-use with <profile> sets CLAUDE_CONFIG_DIR to native ~/.claude', { skip:
   );
 });
 
-test('cc-use <profile> (isolated) sets CLAUDE_CONFIG_DIR to session dir', { skip: posixOnly }, () => {
+test('cc-use <profile> sets CLAUDE_CONFIG_DIR to native ~/.claude', { skip: posixOnly }, () => {
   setupProfile();
   const result = run(['deepseek']);
   assert.equal(result.status, 0, result.stderr);
-  // CC_USE_DIR=tmp/cc-use → sessionDirFor('deepseek') = tmp/cc-use/sessions/deepseek
+  // HOME=tmp → NATIVE_CLAUDE_DIR = tmp/.claude
   assert.ok(
-    result.stdout.includes(`CLAUDE_CONFIG_DIR=${sessionDir}\n`),
-    `expected CLAUDE_CONFIG_DIR=${sessionDir}, got: ${result.stdout}`,
+    result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`),
+    `expected CLAUDE_CONFIG_DIR=${nativeClaudeDir}, got: ${result.stdout}`,
   );
 });
 
@@ -107,10 +111,10 @@ test('help text includes cc-use with <profile>', () => {
   assert.match(USAGE, /cc-use with <profile>/);
 });
 
-test('cc-use isolate with missing profile name errors', () => {
+test('cc-use isolate no default profile errors in non-TTY', () => {
   const result = run(['isolate']);
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /cc-use isolate: profile name required/);
+  assert.match(result.stderr, /cc-use isolate: no default profile set/);
 });
 
 test('cc-use isolate <profile> sets CLAUDE_CONFIG_DIR to session dir', { skip: posixOnly }, () => {
@@ -149,7 +153,7 @@ test('status is a reserved subcommand name', () => {
   assert.equal(isReserved('status'), true);
 });
 
-test('cc-use auto selects usable default profile in isolated mode', { skip: posixOnly }, () => {
+test('cc-use auto selects usable default profile in shared mode', { skip: posixOnly }, () => {
   setupProfile('auto-def');
   const configPath = join(ccUseDir, 'config.json');
   writeFileSync(
@@ -170,7 +174,7 @@ test('cc-use auto selects usable default profile in isolated mode', { skip: posi
 
   const result = run(['auto']);
   assert.equal(result.status, 0, result.stderr);
-  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'auto-def')}\n`));
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
   assert.match(result.stderr, /selected 'auto-def' \(manual_available\)/);
 });
 
@@ -200,7 +204,7 @@ test('cc-use auto falls back when default is unusable', { skip: posixOnly }, () 
 
   const result = run(['auto']);
   assert.equal(result.status, 0, result.stderr);
-  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'auto-yes')}\n`));
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
   assert.match(result.stderr, /selected 'auto-yes' \(manual_available\)/);
 });
 
@@ -291,7 +295,7 @@ test('cc-use auto rechecks stale usable cache before selecting', { skip: posixOn
 
   const result = run(['auto']);
   assert.equal(result.status, 0, result.stderr);
-  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'stale-fallback')}\n`));
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
   assert.match(result.stderr, /selected 'stale-fallback'/);
 });
 
@@ -340,7 +344,7 @@ test('cc-use auto skips unknown candidates and selects fallback', { skip: posixO
 
   const result = run(['auto']);
   assert.equal(result.status, 0, result.stderr);
-  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'unknown-fallback')}\n`));
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
   assert.match(result.stderr, /selected 'unknown-fallback'/);
 });
 
@@ -449,4 +453,120 @@ test('cc-use no-arg with no profiles in non-TTY errors', () => {
   const result = run([]);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /no default profile set/);
+});
+
+
+// --- v0.5 with-first semantics ---
+
+test('cc-use default profile uses native ~/.claude', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run([]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+});
+
+test('cc-use -p passes args through with default profile', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+});
+
+test('cc-use -- passes args through with default profile', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['--', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+  assert.ok(!result.stdout.includes('ARG:--'), '`--` separator should be stripped, not passed to claude');
+  assert.ok(result.stdout.includes('ARG:-p'));
+  assert.ok(result.stdout.includes('ARG:review this'));
+});
+
+test('cc-use <profile> passes args through', { skip: posixOnly }, () => {
+  setupProfile();
+  const result = run(['deepseek', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+});
+
+test('cc-use with default profile uses native ~/.claude', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['with']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+});
+
+test('cc-use with -p passes args through with default profile', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['with', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+});
+
+test('cc-use with -- passes args through with default profile', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['with', '--', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${nativeClaudeDir}\n`));
+  assert.ok(!result.stdout.includes('ARG:--'), '`--` separator should be stripped, not passed to claude');
+  assert.ok(result.stdout.includes('ARG:-p'));
+  assert.ok(result.stdout.includes('ARG:review this'));
+});
+
+test('cc-use isolate default profile uses session dir', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['isolate']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${sessionDir}\n`));
+});
+
+test('cc-use isolate -p passes args through with default profile', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['isolate', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${sessionDir}\n`));
+});
+
+test('cc-use isolate -- passes args through with default profile', { skip: posixOnly }, () => {
+  setupProfile();
+  setDefault('deepseek');
+  const result = run(['isolate', '--', '-p', 'review this']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${sessionDir}\n`));
+  assert.ok(!result.stdout.includes('ARG:--'), '`--` separator should be stripped, not passed to claude');
+  assert.ok(result.stdout.includes('ARG:-p'));
+  assert.ok(result.stdout.includes('ARG:review this'));
+});
+
+test('cc-use isolate auto selects usable profile in isolated mode', { skip: posixOnly }, () => {
+  setupProfile('iso-auto');
+  const configPath = join(ccUseDir, 'config.json');
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      default: 'iso-auto',
+      auto: {
+        fallbackOrder: [],
+        profiles: {
+          'iso-auto': {
+            mode: 'token_plan',
+            check: { kind: 'manual_availability', available: true },
+          },
+        },
+      },
+    }),
+  );
+
+  const result = run(['isolate', 'auto']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(result.stdout.includes(`CLAUDE_CONFIG_DIR=${join(ccUseDir, 'sessions', 'iso-auto')}\n`));
+  assert.match(result.stderr, /selected 'iso-auto' \(manual_available\)/);
 });

@@ -1,7 +1,7 @@
 {
   "name": "cc-use",
-  "version": "0.4.0",
-  "description": "Launch Claude Code with third-party Anthropic-compatible providers (DeepSeek, Kimi, GLM, Qwen, Volcengine, OpenRouter…). Isolated sessions by default; opt-in `cc-use with` shares your native ~/.claude/ context.",
+  "version": "0.5.0",
+  "description": "Launch Claude Code with third-party Anthropic-compatible providers (DeepSeek, Kimi, GLM, Qwen, Volcengine, OpenRouter…). Shared native ~/.claude/ context by default; use `cc-use isolate` for per-profile isolated sessions.",
   "keywords": [
     "claude",
     "claude-code",

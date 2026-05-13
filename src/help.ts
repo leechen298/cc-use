@@ -1,12 +1,13 @@
 export const USAGE = `cc-use — launch Claude Code with a chosen Anthropic-compatible provider
 
 Usage:
-  cc-use                              Launch with the default profile (isolated session; or wizard if none)
-  cc-use <profile> [claude args...]   Launch using <profile> (isolated session); extra args pass to claude
-  cc-use auto [claude args...]        Auto-select a usable profile, then launch isolated
+  cc-use                              Launch with the default profile (shared context; or wizard if none)
+  cc-use <profile> [claude args...]   Launch using <profile> (shared context); extra args pass to claude
+  cc-use auto [claude args...]        Auto-select a usable profile, then launch shared context
+  cc-use with <profile> [claude args...]  Explicit shared-context launch using <profile>
+  cc-use with auto [claude args...]   Compatibility alias for shared auto
   cc-use isolate <profile> [claude args...]  Launch using <profile> with explicit isolated session
-  cc-use with <profile> [claude args...]  Launch using <profile> but reuse native ~/.claude (shared context)
-  cc-use with auto [claude args...]   Auto-select a usable profile, then launch shared context
+  cc-use isolate auto [claude args...]  Auto-select a usable profile, then launch isolated
   cc-use [-flag args...]              Launch with default + pass args to claude
   cc-use init [template]              Interactive setup; defaults to picker
   cc-use ls                           List configured profiles
@@ -27,8 +28,8 @@ Files (under ~/.cc-use/):
   status.json             Last known auto-routing usability cache
   sessions/<name>/        Per-profile CLAUDE_CONFIG_DIR (isolated sessions)
 
-By default, cc-use <profile> uses isolated sessions under ~/.cc-use/sessions/.
-Use cc-use with <profile> to share native ~/.claude/ context (history, skills, projects).
+By default, cc-use shares your native ~/.claude/ context (history, skills, projects).
+Use cc-use isolate <profile> for a separate CLAUDE_CONFIG_DIR per profile.
 cc-use never edits your shell rc files.
 Native \`claude\` (your official subscription) keeps working in parallel.
 

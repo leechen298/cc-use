@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/cc-use.svg)](https://www.npmjs.com/package/cc-use)
 
-Launch Claude Code with DeepSeek, Kimi, Qwen, GLM, MiniMax, Volcengine ARK, BytePlus ModelArk, OpenRouter — Chinese providers and their international endpoints both included. `cc-use with` shares your native `~/.claude/` context; `cc-use isolate` for explicit isolated sessions.
+Launch Claude Code with DeepSeek, Kimi, Qwen, GLM, MiniMax, Volcengine ARK, BytePlus ModelArk, OpenRouter — Chinese providers and their international endpoints both included. Shared native `~/.claude/` context by default; `cc-use isolate` for explicit isolated sessions.
 
 ![cc-use demo](docs/assets/demo.gif)
 
@@ -18,13 +18,14 @@ Requires Node ≥ 18 and Claude Code (`npm install -g @anthropic-ai/claude-code`
 
 ```bash
 cc-use init                       # interactive setup: pick template, paste API key
-cc-use with deepseek              # launch via DeepSeek, reuse native ~/.claude (recommended daily use)
-cc-use with auto                  # auto-select a usable profile, reuse native ~/.claude
+cc-use deepseek                   # launch via DeepSeek, reuse native ~/.claude (default daily use)
+cc-use auto                       # auto-select a usable profile, reuse native ~/.claude
 cc-use deepseek -p "review X"     # one-shot query (extra args pass through to claude)
-cc-use auto -p "review X"         # auto-select a usable profile, isolated session
+cc-use with deepseek              # explicit shared-context launch via DeepSeek
+cc-use with auto                  # compatibility alias for shared auto
 cc-use isolate deepseek           # launch via DeepSeek with explicit isolated session
-cc-use deepseek                   # launch via DeepSeek (isolated session, compatible shorthand)
-cc-use                            # launch with the default profile (isolated session)
+cc-use isolate auto               # auto-select a usable profile, isolated session
+cc-use                            # launch with the default profile (shared context)
 
 cc-use ls                         # list configured profiles
 cc-use status                     # show last known auto-routing status
@@ -39,7 +40,7 @@ cc-use --help                     # full command reference
 
 `import-history` copies the original transcript by default. For DeepSeek or other providers that cannot resume Claude thinking/tool-call history, add `--sanitize`; this keeps readable transcript text, removes Claude thinking blocks, and converts historical tool/media/result blocks into plain text markers before copying into `~/.cc-use/sessions/<profile>/`.
 
-Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). `cc-use with <profile>` is the recommended daily driver — it shares your native `~/.claude/` context (history, skills, projects). Use `cc-use isolate <profile>` (or the shorthand `cc-use <profile>`) for an isolated `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`.
+Profile configs live in `~/.cc-use/providers/<name>.json` (chmod 600). `cc-use <profile>` is the recommended daily driver — it shares your native `~/.claude/` context (history, skills, projects). Use `cc-use isolate <profile>` for an isolated `CLAUDE_CONFIG_DIR=~/.cc-use/sessions/<name>/`.
 
 ## Auto routing
 
